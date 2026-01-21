@@ -1,5 +1,6 @@
 import { ArrowRight, Leaf } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const CTASection = () => {
   return (
@@ -24,10 +25,12 @@ const CTASection = () => {
             Join thousands of farmers who are already using PlantGuard AI to detect diseases early and protect their harvests.
           </p>
           
-          <Button variant="cta" size="xl" className="group">
-            Start Disease Detection
-            <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-          </Button>
+          <Link to="/register">
+            <Button variant="cta" size="xl" className="group">
+              Start Disease Detection
+              <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+            </Button>
+          </Link>
         </div>
       </div>
     </section>

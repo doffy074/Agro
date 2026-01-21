@@ -15,13 +15,6 @@ const users = [
     features: ["Validate predictions", "Provide expert advice", "Monitor crop health"],
     color: "bg-ever-green",
   },
-  {
-    icon: Settings,
-    title: "Administrators",
-    description: "Manage users, monitor system health, and ensure smooth operations.",
-    features: ["Manage users and data", "Monitor system health", "Generate reports"],
-    color: "bg-matcha",
-  },
 ];
 
 const UsersSection = () => {
@@ -40,7 +33,7 @@ const UsersSection = () => {
           </p>
         </div>
         
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
           {users.map((user, index) => (
             <div 
               key={user.title}

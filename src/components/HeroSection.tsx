@@ -1,5 +1,6 @@
 import { Upload, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 import heroImage from "@/assets/hero-image.jpg";
 
 const HeroSection = () => {
@@ -28,15 +29,19 @@ const HeroSection = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4">
-            <Button variant="hero" size="xl" className="group">
-              <Upload className="h-5 w-5" />
-              Analyze Leaf Image
-              <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-            </Button>
+            <Link to="/register">
+              <Button variant="hero" size="xl" className="group">
+                <Upload className="h-5 w-5" />
+                Analyze Leaf Image
+                <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+              </Button>
+            </Link>
             
-            <Button variant="hero-outline" size="xl">
-              How It Works
-            </Button>
+            <a href="#how-it-works">
+              <Button variant="hero-outline" size="xl">
+                How It Works
+              </Button>
+            </a>
           </div>
           
           <div className="flex items-center gap-6 mt-10 pt-8 border-t border-border">
