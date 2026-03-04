@@ -66,33 +66,61 @@
   }
 
   .dark {
-    --background: 150 25% 10%;
-    --foreground: 110 20% 97%;
+    /* Green Agricultural Palette – dark mode */
+    --pistage: 150 18% 16%;
+    --ever-green: 150 16% 22%;
+    --matcha: 120 14% 50%;
+    --early-green: 120 18% 55%;
+    --calm-green: 110 25% 82%;
+    --resting-green: 110 28% 75%;
 
-    --card: 150 22% 15%;
-    --card-foreground: 110 20% 97%;
+    /* Semantic tokens */
+    --background: 150 20% 9%;
+    --foreground: 110 20% 92%;
 
-    --popover: 150 22% 15%;
-    --popover-foreground: 110 20% 97%;
+    --card: 150 18% 13%;
+    --card-foreground: 110 20% 92%;
 
-    --primary: 110 20% 87%;
-    --primary-foreground: 150 25% 15%;
+    --popover: 150 18% 13%;
+    --popover-foreground: 110 20% 92%;
 
-    --secondary: 150 22% 20%;
-    --secondary-foreground: 110 20% 97%;
+    --primary: 140 30% 45%;
+    --primary-foreground: 0 0% 98%;
 
-    --muted: 150 22% 20%;
-    --muted-foreground: 110 15% 60%;
+    --secondary: 150 18% 18%;
+    --secondary-foreground: 110 20% 92%;
 
-    --accent: 150 22% 20%;
-    --accent-foreground: 110 20% 97%;
+    --muted: 150 16% 18%;
+    --muted-foreground: 110 12% 60%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --accent: 150 16% 20%;
+    --accent-foreground: 110 20% 92%;
 
-    --border: 150 22% 20%;
-    --input: 150 22% 20%;
-    --ring: 110 20% 87%;
+    --destructive: 0 62.8% 45%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 150 16% 22%;
+    --input: 150 16% 22%;
+    --ring: 110 22% 70%;
+
+    /* Custom gradients – dark */
+    --gradient-hero: linear-gradient(135deg, hsl(150 18% 11%) 0%, hsl(150 20% 9%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(150 18% 13%) 0%, hsl(150 20% 9%) 100%);
+    --gradient-cta: linear-gradient(135deg, hsl(150 18% 16%) 0%, hsl(150 20% 13%) 100%);
+
+    /* Shadows – dark */
+    --shadow-soft: 0 4px 20px -4px hsl(0 0% 0% / 0.3);
+    --shadow-card: 0 8px 32px -8px hsl(0 0% 0% / 0.4);
+    --shadow-button: 0 4px 14px -4px hsl(0 0% 0% / 0.5);
+
+    --sidebar-background: 150 20% 11%;
+    --sidebar-foreground: 110 20% 90%;
+    --sidebar-primary: 110 22% 85%;
+    --sidebar-primary-foreground: 150 20% 10%;
+    --sidebar-accent: 150 16% 18%;
+    --sidebar-accent-foreground: 110 20% 90%;
+    --sidebar-border: 150 16% 20%;
+    --sidebar-ring: 110 22% 70%;
   }
 }
 
@@ -135,4 +163,37 @@
   .shadow-button {
     box-shadow: var(--shadow-button);
   }
+}
+
+/*
+ * Dark-mode overrides for elements that use a green palette color as a
+ * BACKGROUND combined with white text (buttons, badges, banners).
+ * The palette variables become light in dark mode (for heading text),
+ * so we pin the background back to a darker shade here.
+ */
+.dark .bg-calm-green {
+  background-color: hsl(150 30% 28%);
+}
+.dark .bg-resting-green,
+.dark .hover\:bg-resting-green:hover {
+  background-color: hsl(150 28% 22%);
+}
+.dark .bg-early-green {
+  background-color: hsl(130 25% 33%);
+}
+.dark .hover\:bg-early-green\/90:hover {
+  background-color: hsl(130 25% 28%);
+}
+
+/* Gradient banners (e.g. farmer welcome) */
+.dark .from-calm-green {
+  --tw-gradient-from: hsl(150 30% 28%) var(--tw-gradient-from-position);
+}
+.dark .to-resting-green {
+  --tw-gradient-to: hsl(150 28% 22%) var(--tw-gradient-to-position);
+}
+
+/* Keep hover states for outline-style buttons that use bg-pistage */
+.dark .hover\:bg-pistage:hover {
+  background-color: hsl(150 18% 20%);
 }

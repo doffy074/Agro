@@ -68,7 +68,7 @@ const OfficerDashboard: React.FC = () => {
         <p className="text-white/80 mb-4">
           Review and verify AI predictions submitted by farmers
         </p>
-        <Button asChild className="bg-white text-calm-green hover:bg-pistage">
+        <Button asChild className="bg-white dark:bg-card text-calm-green hover:bg-pistage">
           <Link to="/officer/reviews">
             <ClipboardCheck className="w-4 h-4 mr-2" />
             Start Reviewing
@@ -85,8 +85,8 @@ const OfficerDashboard: React.FC = () => {
                 <p className="text-sm text-muted-foreground">Pending Reviews</p>
                 <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center">
-                <Clock className="w-5 h-5 text-yellow-600" />
+              <div className="w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
+                <Clock className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
               </div>
             </div>
           </CardContent>
@@ -161,7 +161,7 @@ const OfficerDashboard: React.FC = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="font-medium text-calm-green">{prediction.cropName}</p>
-                      <Badge variant="secondary" className="bg-yellow-100 text-yellow-700">
+                      <Badge variant="secondary" className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
                         Pending
                       </Badge>
                     </div>

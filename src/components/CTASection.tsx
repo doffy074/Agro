@@ -13,15 +13,15 @@ const CTASection = () => {
       
       <div className="container relative z-10">
         <div className="max-w-3xl mx-auto text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-pistage/20 rounded-2xl mb-8">
-            <Leaf className="h-8 w-8 text-pistage" />
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-white/15 rounded-2xl mb-8">
+            <Leaf className="h-8 w-8 text-white/90" />
           </div>
           
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-primary-foreground mb-6">
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6">
             Protect Your Crops with AI-Powered Insights
           </h2>
           
-          <p className="text-lg text-pistage/80 mb-10 max-w-2xl mx-auto">
+          <p className="text-lg text-white/75 mb-10 max-w-2xl mx-auto">
             Join thousands of farmers who are already using PlantGuard AI to detect diseases early and protect their harvests.
           </p>
           

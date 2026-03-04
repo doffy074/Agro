@@ -106,7 +106,7 @@ const PendingReviews: React.FC = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="font-medium text-calm-green">{prediction.cropName}</p>
-                        <Badge variant="secondary" className="bg-yellow-100 text-yellow-700">
+                        <Badge variant="secondary" className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
                           <Clock className="w-3 h-3 mr-1" />
                           Pending
                         </Badge>

@@ -154,7 +154,7 @@ const SystemMetrics: React.FC = () => {
                   <p className="text-sm text-muted-foreground">Pending Review</p>
                   <p className="text-2xl font-bold text-yellow-600">{metrics?.pendingReviews || 0}</p>
                 </div>
-                <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
                   <Clock className="w-5 h-5 text-yellow-600" />
                 </div>
               </div>

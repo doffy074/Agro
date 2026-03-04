@@ -59,7 +59,7 @@ const AdminDashboard: React.FC = () => {
           Welcome, {user?.name}. Manage users, monitor system performance, and control AI models.
         </p>
         <div className="flex flex-wrap gap-3">
-          <Button asChild className="bg-white text-calm-green hover:bg-pistage">
+          <Button asChild className="bg-white dark:bg-card text-calm-green hover:bg-pistage">
             <Link to="/admin/users">
               <Users className="w-4 h-4 mr-2" />
               Manage Users

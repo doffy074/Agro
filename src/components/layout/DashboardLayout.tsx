@@ -162,7 +162,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen bg-pistage">
+    <div className="min-h-screen bg-pistage dark:bg-background">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
@@ -174,18 +174,18 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed top-0 left-0 z-50 h-full w-64 bg-calm-green transform transition-transform duration-200 ease-in-out lg:translate-x-0',
+          'fixed top-0 left-0 z-50 h-full w-64 bg-calm-green dark:bg-[hsl(150_20%_11%)] transform transition-transform duration-200 ease-in-out lg:translate-x-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center justify-between p-4 border-b border-resting-green">
+            <div className="flex items-center justify-between p-4 border-b border-resting-green dark:border-border">
             <Link to="/dashboard" className="flex items-center gap-2">
               <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
-                <Leaf className="w-6 h-6 text-white" />
+                <Leaf className="w-6 h-6 text-white dark:text-primary" />
               </div>
-              <span className="text-xl font-bold text-white">PlantWise AI</span>
+              <span className="text-xl font-bold text-white dark:text-foreground">PlantWise AI</span>
             </Link>
             <Button
               variant="ghost"
@@ -224,7 +224,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           </nav>
 
           {/* User info */}
-          <div className="p-4 border-t border-resting-green">
+          <div className="p-4 border-t border-resting-green dark:border-border">
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10">
                 <AvatarImage src={user?.avatar} />
@@ -246,7 +246,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       {/* Main content */}
       <div className="lg:pl-64">
         {/* Top navbar */}
-        <header className="sticky top-0 z-30 bg-white border-b border-ever-green shadow-sm">
+        <header className="sticky top-0 z-30 bg-white dark:bg-card border-b border-ever-green dark:border-border shadow-sm">
           <div className="flex items-center justify-between px-4 py-3">
             <Button
               variant="ghost"

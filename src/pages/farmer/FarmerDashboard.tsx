@@ -76,7 +76,7 @@ const FarmerDashboard: React.FC = () => {
         <p className="text-white/80 mb-4">
           Upload a plant leaf image to detect diseases instantly with AI
         </p>
-        <Button asChild className="bg-white text-calm-green hover:bg-pistage">
+        <Button asChild className="bg-white dark:bg-card text-calm-green hover:bg-pistage">
           <Link to="/upload">
             <Upload className="w-4 h-4 mr-2" />
             Upload New Image

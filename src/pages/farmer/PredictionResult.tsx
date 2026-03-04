@@ -215,7 +215,7 @@ const PredictionResult: React.FC = () => {
                     Verified
                   </Badge>
                 ) : (
-                  <Badge variant="secondary" className="bg-yellow-100 text-yellow-700">
+                  <Badge variant="secondary" className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
                     <Clock className="w-3 h-3 mr-1" />
                     Pending Review
                   </Badge>

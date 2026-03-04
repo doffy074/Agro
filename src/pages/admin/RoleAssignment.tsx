@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -44,11 +44,7 @@ const RoleAssignment: React.FC = () => {
   const [isChangingRole, setIsChangingRole] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchUsers();
-  }, [currentPage]);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await adminApi.getUsers(currentPage, pageSize);
@@ -61,7 +57,11 @@ const RoleAssignment: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentPage, pageSize]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const handleOpenRoleDialog = (user: User) => {
     setSelectedUser(user);
@@ -89,8 +89,8 @@ const RoleAssignment: React.FC = () => {
       await adminApi.updateUserRole(selectedUser.id, newRole);
       fetchUsers();
       handleCloseDialog();
-    } catch (err: any) {
-      setError(err.message || 'Failed to update role');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to update role');
     } finally {
       setIsChangingRole(false);
     }
@@ -300,9 +300,9 @@ const RoleAssignment: React.FC = () => {
               </div>
 
               {newRole !== selectedUser?.role && (
-                <Alert className="border-yellow-500 bg-yellow-50">
-                  <AlertTriangle className="w-4 h-4 text-yellow-600" />
-                  <AlertDescription className="text-yellow-700">
+                <Alert className="border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20 dark:border-yellow-600">
+                  <AlertTriangle className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                  <AlertDescription className="text-yellow-700 dark:text-yellow-300">
                     You are about to change this user's role from{' '}
                     <strong>{selectedUser?.role}</strong> to <strong>{newRole}</strong>.
                   </AlertDescription>
