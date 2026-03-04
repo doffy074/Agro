@@ -17,11 +17,23 @@ async def init_db():
                 name TEXT NOT NULL,
                 password TEXT NOT NULL,
                 role TEXT DEFAULT 'farmer',
+                phone TEXT DEFAULT '',
+                location TEXT DEFAULT '',
                 isActive INTEGER DEFAULT 1,
                 createdAt TEXT NOT NULL,
                 updatedAt TEXT NOT NULL
             )
         """)
+        
+        # Add phone and location columns if they don't exist (migration)
+        try:
+            await db.execute("ALTER TABLE users ADD COLUMN phone TEXT DEFAULT ''")
+        except:
+            pass
+        try:
+            await db.execute("ALTER TABLE users ADD COLUMN location TEXT DEFAULT ''")
+        except:
+            pass
         
         # Predictions table
         await db.execute("""
@@ -72,7 +84,52 @@ async def init_db():
             )
         """)
         
+        # Feedback table
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS feedback (
+                id TEXT PRIMARY KEY,
+                predictionId TEXT NOT NULL,
+                userId TEXT NOT NULL,
+                correct INTEGER NOT NULL,
+                createdAt TEXT NOT NULL,
+                FOREIGN KEY (predictionId) REFERENCES predictions(id),
+                FOREIGN KEY (userId) REFERENCES users(id)
+            )
+        """)
+
+        # Password reset tokens table
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS password_reset_tokens (
+                id TEXT PRIMARY KEY,
+                userId TEXT NOT NULL,
+                tokenHash TEXT NOT NULL UNIQUE,
+                expiresAt TEXT NOT NULL,
+                createdAt TEXT NOT NULL,
+                FOREIGN KEY (userId) REFERENCES users(id)
+            )
+        """)
+
+        # Email verification tokens table
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS email_verification_tokens (
+                id TEXT PRIMARY KEY,
+                userId TEXT NOT NULL,
+                tokenHash TEXT NOT NULL UNIQUE,
+                expiresAt TEXT NOT NULL,
+                createdAt TEXT NOT NULL,
+                FOREIGN KEY (userId) REFERENCES users(id)
+            )
+        """)
+
         await db.commit()
+
+        # Migrations – add columns if missing
+        for col, default in [("avatar", "''"), ("emailVerified", "0")]:
+            try:
+                await db.execute(f"ALTER TABLE users ADD COLUMN {col} TEXT DEFAULT {default}")
+                await db.commit()
+            except:
+                pass
         
         # Create default admin if not exists
         cursor = await db.execute("SELECT COUNT(*) FROM users WHERE role = 'admin'")
@@ -133,12 +190,17 @@ class Database:
             cursor = await db.execute("SELECT * FROM users WHERE email = ?", (email,))
             row = await cursor.fetchone()
             if row:
+                keys = row.keys()
                 return {
                     "id": row["id"],
                     "email": row["email"],
                     "name": row["name"],
                     "password": row["password"],
                     "role": row["role"],
+                    "phone": row["phone"] if "phone" in keys else "",
+                    "location": row["location"] if "location" in keys else "",
+                    "avatar": row["avatar"] if "avatar" in keys else "",
+                    "emailVerified": bool(int(row["emailVerified"])) if "emailVerified" in keys else False,
                     "isActive": bool(row["isActive"]),
                     "createdAt": row["createdAt"],
                     "updatedAt": row["updatedAt"]
@@ -151,12 +213,17 @@ class Database:
             cursor = await db.execute("SELECT * FROM users WHERE id = ?", (user_id,))
             row = await cursor.fetchone()
             if row:
+                keys = row.keys()
                 return {
                     "id": row["id"],
                     "email": row["email"],
                     "name": row["name"],
                     "password": row["password"],
                     "role": row["role"],
+                    "phone": row["phone"] if "phone" in keys else "",
+                    "location": row["location"] if "location" in keys else "",
+                    "avatar": row["avatar"] if "avatar" in keys else "",
+                    "emailVerified": bool(int(row["emailVerified"])) if "emailVerified" in keys else False,
                     "isActive": bool(row["isActive"]),
                     "createdAt": row["createdAt"],
                     "updatedAt": row["updatedAt"]
@@ -266,17 +333,49 @@ class Database:
                 }
             return None
     
-    async def get_user_predictions(self, user_id: str, page: int, limit: int) -> Tuple[List[Dict], int]:
+    async def get_user_predictions(self, user_id: str, page: int, limit: int, *,
+                                     crop: Optional[str] = None,
+                                     disease: Optional[str] = None,
+                                     status: Optional[str] = None,
+                                     date_from: Optional[str] = None,
+                                     date_to: Optional[str] = None,
+                                     search: Optional[str] = None) -> Tuple[List[Dict], int]:
         import json
         async with aiosqlite.connect(self.db_path) as db:
             db.row_factory = aiosqlite.Row
             offset = (page - 1) * limit
-            
+
+            where_clauses = ["userId = ?"]
+            params: list = [user_id]
+
+            if crop:
+                where_clauses.append("LOWER(cropName) LIKE ?")
+                params.append(f"%{crop.lower()}%")
+            if disease:
+                where_clauses.append("LOWER(diseaseName) LIKE ?")
+                params.append(f"%{disease.lower()}%")
+            if status:
+                where_clauses.append("status = ?")
+                params.append(status)
+            if date_from:
+                where_clauses.append("createdAt >= ?")
+                params.append(date_from)
+            if date_to:
+                where_clauses.append("createdAt <= ?")
+                params.append(date_to)
+            if search:
+                where_clauses.append("(LOWER(cropName) LIKE ? OR LOWER(diseaseName) LIKE ?)")
+                params.extend([f"%{search.lower()}%", f"%{search.lower()}%"])
+
+            where_sql = " AND ".join(where_clauses)
+
             cursor = await db.execute(
-                "SELECT * FROM predictions WHERE userId = ? ORDER BY createdAt DESC LIMIT ? OFFSET ?",
-                (user_id, limit, offset)
+                f"SELECT * FROM predictions WHERE {where_sql} ORDER BY createdAt DESC LIMIT ? OFFSET ?",
+                (*params, limit, offset)
             )
-            count_cursor = await db.execute("SELECT COUNT(*) FROM predictions WHERE userId = ?", (user_id,))
+            count_cursor = await db.execute(
+                f"SELECT COUNT(*) FROM predictions WHERE {where_sql}", params
+            )
             
             rows = await cursor.fetchall()
             total = (await count_cursor.fetchone())[0]
@@ -463,8 +562,16 @@ class Database:
             cursor = await db.execute("SELECT COUNT(*) FROM predictions WHERE isVerified = 0 AND isFlagged = 0")
             pending_reviews = (await cursor.fetchone())[0]
             
-            # Calculate accuracy (mock for now)
-            accuracy_rate = 95.2 if total_predictions > 0 else 0
+            # Calculate accuracy from farmer feedback
+            cursor = await db.execute("SELECT COUNT(*) FROM feedback")
+            total_feedback = (await cursor.fetchone())[0]
+            
+            if total_feedback > 0:
+                cursor = await db.execute("SELECT COUNT(*) FROM feedback WHERE correct = 1")
+                correct_feedback = (await cursor.fetchone())[0]
+                accuracy_rate = (correct_feedback / total_feedback) * 100
+            else:
+                accuracy_rate = 0
             
             return {
                 "totalUsers": total_users,
@@ -492,14 +599,260 @@ class Database:
             
             by_crop = []
             for row in rows:
+                # Per-crop accuracy from feedback
+                cursor = await db.execute("""
+                    SELECT COUNT(*) FROM feedback f
+                    JOIN predictions p ON f.predictionId = p.id
+                    WHERE p.cropName = ?
+                """, (row[0],))
+                crop_total = (await cursor.fetchone())[0]
+                
+                cursor = await db.execute("""
+                    SELECT COUNT(*) FROM feedback f
+                    JOIN predictions p ON f.predictionId = p.id
+                    WHERE p.cropName = ? AND f.correct = 1
+                """, (row[0],))
+                crop_correct = (await cursor.fetchone())[0]
+                
+                crop_accuracy = (crop_correct / crop_total * 100) if crop_total > 0 else 0
+                
                 by_crop.append({
                     "crop": row[0],
                     "count": row[1],
-                    "accuracy": 92.5  # Mock accuracy
+                    "accuracy": round(crop_accuracy, 1)
                 })
+            
+            # Overall accuracy from feedback
+            cursor = await db.execute("SELECT COUNT(*) FROM feedback")
+            total_feedback = (await cursor.fetchone())[0]
+            if total_feedback > 0:
+                cursor = await db.execute("SELECT COUNT(*) FROM feedback WHERE correct = 1")
+                correct_feedback = (await cursor.fetchone())[0]
+                overall_accuracy = round((correct_feedback / total_feedback) * 100, 1)
+            else:
+                overall_accuracy = 0
             
             return {
                 "totalReviewed": total_reviewed,
-                "accuracyRate": 95.2,
+                "accuracyRate": overall_accuracy,
                 "byCrop": by_crop
             }
+    async def get_farmer_statistics(self, user_id: str) -> Dict[str, Any]:
+        """Get statistics for a specific farmer"""
+        async with aiosqlite.connect(self.db_path) as db:
+            # Total predictions for this user
+            cursor = await db.execute(
+                "SELECT COUNT(*) FROM predictions WHERE userId = ?", 
+                (user_id,)
+            )
+            total = (await cursor.fetchone())[0]
+            
+            # Healthy count
+            cursor = await db.execute(
+                "SELECT COUNT(*) FROM predictions WHERE userId = ? AND status = 'healthy'", 
+                (user_id,)
+            )
+            healthy = (await cursor.fetchone())[0]
+            
+            # Diseased count
+            cursor = await db.execute(
+                "SELECT COUNT(*) FROM predictions WHERE userId = ? AND status = 'diseased'", 
+                (user_id,)
+            )
+            diseased = (await cursor.fetchone())[0]
+            
+            # Verified count
+            cursor = await db.execute(
+                "SELECT COUNT(*) FROM predictions WHERE userId = ? AND isVerified = 1", 
+                (user_id,)
+            )
+            verified = (await cursor.fetchone())[0]
+            
+            return {
+                "total": total,
+                "healthy": healthy,
+                "diseased": diseased,
+                "verified": verified
+            }
+
+    # Feedback methods
+    async def save_feedback(self, prediction_id: str, user_id: str, correct: bool) -> None:
+        import uuid as _uuid
+        async with aiosqlite.connect(self.db_path) as db:
+            # Upsert: delete old feedback then insert new
+            await db.execute(
+                "DELETE FROM feedback WHERE predictionId = ? AND userId = ?",
+                (prediction_id, user_id)
+            )
+            await db.execute("""
+                INSERT INTO feedback (id, predictionId, userId, correct, createdAt)
+                VALUES (?, ?, ?, ?, ?)
+            """, (
+                str(_uuid.uuid4()),
+                prediction_id,
+                user_id,
+                1 if correct else 0,
+                datetime.utcnow().isoformat()
+            ))
+            await db.commit()
+
+    async def get_feedback(self, prediction_id: str, user_id: str) -> Optional[Dict[str, Any]]:
+        async with aiosqlite.connect(self.db_path) as db:
+            db.row_factory = aiosqlite.Row
+            cursor = await db.execute(
+                "SELECT * FROM feedback WHERE predictionId = ? AND userId = ?",
+                (prediction_id, user_id)
+            )
+            row = await cursor.fetchone()
+            if row:
+                return {
+                    "id": row["id"],
+                    "predictionId": row["predictionId"],
+                    "userId": row["userId"],
+                    "correct": bool(row["correct"]),
+                    "createdAt": row["createdAt"]
+                }
+            return None
+
+    # Notification methods
+    async def create_notification(self, notification: Dict[str, Any]) -> None:
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute("""
+                INSERT INTO notifications (id, userId, type, title, message, isRead, createdAt, link)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                notification["id"],
+                notification["userId"],
+                notification["type"],
+                notification["title"],
+                notification["message"],
+                0,
+                notification["createdAt"],
+                notification.get("link")
+            ))
+            await db.commit()
+
+    async def get_user_notifications(self, user_id: str, page: int, limit: int) -> Tuple[List[Dict], int, int]:
+        async with aiosqlite.connect(self.db_path) as db:
+            db.row_factory = aiosqlite.Row
+            offset = (page - 1) * limit
+
+            cursor = await db.execute(
+                "SELECT * FROM notifications WHERE userId = ? ORDER BY createdAt DESC LIMIT ? OFFSET ?",
+                (user_id, limit, offset)
+            )
+            count_cursor = await db.execute(
+                "SELECT COUNT(*) FROM notifications WHERE userId = ?", (user_id,)
+            )
+            unread_cursor = await db.execute(
+                "SELECT COUNT(*) FROM notifications WHERE userId = ? AND isRead = 0", (user_id,)
+            )
+
+            rows = await cursor.fetchall()
+            total = (await count_cursor.fetchone())[0]
+            unread_count = (await unread_cursor.fetchone())[0]
+
+            notifications = []
+            for row in rows:
+                notifications.append({
+                    "id": row["id"],
+                    "userId": row["userId"],
+                    "type": row["type"],
+                    "title": row["title"],
+                    "message": row["message"],
+                    "isRead": bool(row["isRead"]),
+                    "createdAt": row["createdAt"],
+                    "link": row["link"]
+                })
+
+            return notifications, total, unread_count
+
+    async def mark_notification_read(self, notification_id: str, user_id: str) -> None:
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute(
+                "UPDATE notifications SET isRead = 1 WHERE id = ? AND userId = ?",
+                (notification_id, user_id)
+            )
+            await db.commit()
+
+    async def mark_all_notifications_read(self, user_id: str) -> None:
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute(
+                "UPDATE notifications SET isRead = 1 WHERE userId = ?",
+                (user_id,)
+            )
+            await db.commit()
+
+    async def delete_notification(self, notification_id: str, user_id: str) -> None:
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute(
+                "DELETE FROM notifications WHERE id = ? AND userId = ?",
+                (notification_id, user_id)
+            )
+            await db.commit()
+
+    # Delete prediction
+    async def delete_prediction(self, prediction_id: str) -> None:
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute("DELETE FROM feedback WHERE predictionId = ?", (prediction_id,))
+            await db.execute("DELETE FROM predictions WHERE id = ?", (prediction_id,))
+            await db.commit()
+
+    # ============================================================
+    # Password reset token methods
+    # ============================================================
+    async def store_reset_token(self, user_id: str, token_hash: str, expires_at: str) -> None:
+        import uuid as _uuid
+        async with aiosqlite.connect(self.db_path) as db:
+            # Remove old tokens for this user
+            await db.execute("DELETE FROM password_reset_tokens WHERE userId = ?", (user_id,))
+            await db.execute("""
+                INSERT INTO password_reset_tokens (id, userId, tokenHash, expiresAt, createdAt)
+                VALUES (?, ?, ?, ?, ?)
+            """, (str(_uuid.uuid4()), user_id, token_hash, expires_at, datetime.utcnow().isoformat()))
+            await db.commit()
+
+    async def get_reset_token(self, token_hash: str) -> Optional[Dict[str, Any]]:
+        async with aiosqlite.connect(self.db_path) as db:
+            db.row_factory = aiosqlite.Row
+            cursor = await db.execute(
+                "SELECT * FROM password_reset_tokens WHERE tokenHash = ?", (token_hash,)
+            )
+            row = await cursor.fetchone()
+            if row:
+                return {"userId": row["userId"], "expiresAt": row["expiresAt"]}
+            return None
+
+    async def delete_reset_token(self, token_hash: str) -> None:
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute("DELETE FROM password_reset_tokens WHERE tokenHash = ?", (token_hash,))
+            await db.commit()
+
+    # ============================================================
+    # Email verification token methods
+    # ============================================================
+    async def store_verification_token(self, user_id: str, token_hash: str, expires_at: str) -> None:
+        import uuid as _uuid
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute("DELETE FROM email_verification_tokens WHERE userId = ?", (user_id,))
+            await db.execute("""
+                INSERT INTO email_verification_tokens (id, userId, tokenHash, expiresAt, createdAt)
+                VALUES (?, ?, ?, ?, ?)
+            """, (str(_uuid.uuid4()), user_id, token_hash, expires_at, datetime.utcnow().isoformat()))
+            await db.commit()
+
+    async def get_verification_token(self, token_hash: str) -> Optional[Dict[str, Any]]:
+        async with aiosqlite.connect(self.db_path) as db:
+            db.row_factory = aiosqlite.Row
+            cursor = await db.execute(
+                "SELECT * FROM email_verification_tokens WHERE tokenHash = ?", (token_hash,)
+            )
+            row = await cursor.fetchone()
+            if row:
+                return {"userId": row["userId"], "expiresAt": row["expiresAt"]}
+            return None
+
+    async def delete_verification_token(self, token_hash: str) -> None:
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute("DELETE FROM email_verification_tokens WHERE tokenHash = ?", (token_hash,))
+            await db.commit()

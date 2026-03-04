@@ -6,9 +6,18 @@ import path from "path";
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
-    port: 8080,
+    port: 5173,
+    strictPort: false,
     hmr: {
       overlay: false,
+      // Use the same port the server actually binds to
+      clientPort: undefined,
+    },
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
     },
   },
   plugins: [react()],

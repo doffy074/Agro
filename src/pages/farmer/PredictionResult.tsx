@@ -8,6 +8,17 @@ import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import {
   ArrowLeft,
   Download,
   CheckCircle2,
@@ -19,6 +30,9 @@ import {
   User,
   FileText,
   Loader2,
+  ThumbsUp,
+  ThumbsDown,
+  Trash2,
 } from 'lucide-react';
 import { predictionApi } from '@/services/api';
 import { Prediction } from '@/types';
@@ -30,6 +44,9 @@ const PredictionResult: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isDownloading, setIsDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [feedbackGiven, setFeedbackGiven] = useState<boolean | null>(null);
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     const fetchPrediction = async () => {
@@ -40,14 +57,27 @@ const PredictionResult: React.FC = () => {
         if (response.data) {
           setPrediction(response.data);
         }
-      } catch (err: any) {
-        setError(err.message || 'Failed to load prediction');
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Failed to load prediction');
       } finally {
         setIsLoading(false);
       }
     };
 
+    const fetchFeedback = async () => {
+      if (!id) return;
+      try {
+        const response = await predictionApi.getFeedback(id);
+        if (response.data) {
+          setFeedbackGiven(response.data.correct);
+        }
+      } catch {
+        // No feedback yet, that's fine
+      }
+    };
+
     fetchPrediction();
+    fetchFeedback();
   }, [id]);
 
   const handleDownloadPDF = async () => {
@@ -68,6 +98,32 @@ const PredictionResult: React.FC = () => {
       console.error('Failed to download PDF:', err);
     } finally {
       setIsDownloading(false);
+    }
+  };
+
+  const handleFeedback = async (correct: boolean) => {
+    if (!id) return;
+    setFeedbackLoading(true);
+    try {
+      await predictionApi.submitFeedback(id, correct);
+      setFeedbackGiven(correct);
+    } catch (err) {
+      console.error('Failed to submit feedback:', err);
+    } finally {
+      setFeedbackLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!id) return;
+    setDeleteLoading(true);
+    try {
+      await predictionApi.deletePrediction(id);
+      navigate('/predictions');
+    } catch (err) {
+      console.error('Failed to delete prediction:', err);
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -292,6 +348,58 @@ const PredictionResult: React.FC = () => {
           </Card>
         )}
 
+        {/* Feedback section */}
+        <Card className="border-matcha/30">
+          <CardHeader>
+            <CardTitle className="text-calm-green flex items-center gap-2">
+              <ThumbsUp className="w-5 h-5" />
+              Help Improve Our AI
+            </CardTitle>
+            <CardDescription>
+              Was this prediction accurate? Your feedback helps us improve.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {feedbackGiven !== null ? (
+              <div className="flex items-center gap-3 bg-pistage p-4 rounded-lg">
+                <CheckCircle2 className="w-5 h-5 text-early-green" />
+                <p className="text-sm text-calm-green">
+                  Thank you! You marked this prediction as{' '}
+                  <span className="font-semibold">{feedbackGiven ? 'Correct' : 'Incorrect'}</span>.
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button
+                  onClick={() => handleFeedback(true)}
+                  disabled={feedbackLoading}
+                  className="flex-1 bg-early-green hover:bg-early-green/90 text-white"
+                >
+                  {feedbackLoading ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <ThumbsUp className="w-4 h-4 mr-2" />
+                  )}
+                  Correct
+                </Button>
+                <Button
+                  onClick={() => handleFeedback(false)}
+                  disabled={feedbackLoading}
+                  variant="outline"
+                  className="flex-1 border-destructive text-destructive hover:bg-destructive/10"
+                >
+                  {feedbackLoading ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <ThumbsDown className="w-4 h-4 mr-2" />
+                  )}
+                  Incorrect
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Button asChild variant="outline" className="border-matcha text-calm-green hover:bg-pistage">
@@ -304,6 +412,45 @@ const PredictionResult: React.FC = () => {
               Upload Another Image
             </Link>
           </Button>
+          <AlertDialog>
+          <AlertDialogTrigger asChild>
+          <Button
+            variant="outline"
+            className="border-destructive text-destructive hover:bg-destructive/10"
+            disabled={deleteLoading}
+          >
+            {deleteLoading ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Trash2 className="w-4 h-4 mr-2" />
+            )}
+            Delete
+          </Button>
+          </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Prediction</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete this prediction? This action cannot be undone and all associated data will be permanently removed.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDelete}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  disabled={deleteLoading}
+                >
+                  {deleteLoading ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-4 h-4 mr-2" />
+                  )}
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
     </>

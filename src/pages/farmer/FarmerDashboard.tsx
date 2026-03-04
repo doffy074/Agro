@@ -33,21 +33,18 @@ const FarmerDashboard: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await predictionApi.getPredictions(1, 5);
-        if (response.data) {
-          const predictions = response.data.predictions;
-          setRecentPredictions(predictions);
-          
-          // Calculate stats
-          const healthy = predictions.filter(p => p.status === 'healthy').length;
-          const verified = predictions.filter(p => p.isVerified).length;
-          
-          setStats({
-            total: response.data.total,
-            healthy,
-            diseased: predictions.length - healthy,
-            verified,
-          });
+        // Fetch predictions for display and stats separately
+        const [predictionsResponse, statsResponse] = await Promise.all([
+          predictionApi.getPredictions(1, 5),
+          predictionApi.getStats()
+        ]);
+        
+        if (predictionsResponse.data) {
+          setRecentPredictions(predictionsResponse.data.predictions);
+        }
+        
+        if (statsResponse.data) {
+          setStats(statsResponse.data);
         }
       } catch (error) {
         console.error('Failed to fetch predictions:', error);

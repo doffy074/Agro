@@ -2,6 +2,7 @@ import numpy as np
 from PIL import Image
 import os
 from typing import Optional, Dict, Any
+from groq_treatments import generate_treatments, FALLBACK_TREATMENTS
 
 # Disease treatments database
 DISEASE_TREATMENTS = {
@@ -257,183 +258,184 @@ DISEASE_CLASSES = [
 
 class PlantDiseaseModel:
     def __init__(self):
-        self.model = None
+        self.pt_model = None   # PyTorch model
+        self.tf_model = None   # TensorFlow model
         self.is_active = True
         self.accuracy = 95.2  # Pre-trained model accuracy
-        self.load_model()
+        self.device = None
+        self.load_models()
     
-    def load_model(self):
-        """Load the trained Keras model"""
-        # Path to the model file (same directory as this script)
-        model_path = os.path.join(os.path.dirname(__file__), "plant_disease_model.h5")
-        
-        try:
-            # Load using TensorFlow/Keras
-            import tensorflow as tf  # type: ignore
-            if os.path.exists(model_path):
-                self.model = tf.keras.models.load_model(model_path)
-                print(f"✅ Model loaded successfully from {model_path}")
-            else:
-                print(f"⚠️ Model file not found at {model_path}. Using mock predictions.")
-                self.model = None
-        except ImportError:
-            print("⚠️ TensorFlow not installed. Using mock predictions.")
-            self.model = None
-        except Exception as e:
-            print(f"⚠️ Error loading model: {e}. Using mock predictions.")
-            self.model = None
+    def load_models(self):
+        """Load BOTH PyTorch and TensorFlow models for parallel inference"""
+        base_dir = os.path.dirname(__file__)
+        pt_model_path = os.path.join(base_dir, "plant_disease_model.pt")
+        h5_model_path = os.path.join(base_dir, "plant_disease_model.h5")
+
+        # --- Load PyTorch model ---
+        if os.path.exists(pt_model_path):
+            try:
+                import torch  # type: ignore
+                import torchvision.models as models  # type: ignore
+
+                self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+                num_classes = len(DISEASE_CLASSES)
+
+                checkpoint = torch.load(pt_model_path, map_location=self.device, weights_only=False)
+
+                # Determine model structure from checkpoint
+                if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
+                    state_dict = checkpoint["model_state_dict"]
+                elif isinstance(checkpoint, dict) and "state_dict" in checkpoint:
+                    state_dict = checkpoint["state_dict"]
+                elif isinstance(checkpoint, dict) and any(k.startswith("fc.") or k.startswith("classifier.") or k.startswith("layer") for k in checkpoint.keys()):
+                    state_dict = checkpoint
+                else:
+                    state_dict = None
+
+                if state_dict is not None:
+                    net = models.resnet50(weights=None)
+                    in_features = net.fc.in_features
+                    net.fc = torch.nn.Linear(in_features, num_classes)
+                    net.load_state_dict(state_dict, strict=False)
+                    net.to(self.device)
+                    net.eval()
+                    self.pt_model = net
+                else:
+                    loaded = checkpoint
+                    if hasattr(loaded, 'eval'):
+                        loaded.to(self.device)
+                        loaded.eval()
+                    self.pt_model = loaded
+
+                print(f"✅ PyTorch model loaded successfully from {pt_model_path} (device: {self.device})")
+            except ImportError:
+                print("⚠️ PyTorch not installed — skipping .pt model")
+            except Exception as e:
+                print(f"⚠️ Error loading PyTorch model: {e}")
+
+        # --- Load TensorFlow model ---
+        if os.path.exists(h5_model_path):
+            try:
+                import tensorflow as tf  # type: ignore
+                self.tf_model = tf.keras.models.load_model(h5_model_path)
+                print(f"✅ TensorFlow model loaded successfully from {h5_model_path}")
+            except ImportError:
+                print("⚠️ TensorFlow not installed — skipping .h5 model")
+            except Exception as e:
+                print(f"⚠️ Error loading TensorFlow model: {e}")
+
+        # Summary
+        loaded = []
+        if self.pt_model is not None:
+            loaded.append("PyTorch (.pt)")
+        if self.tf_model is not None:
+            loaded.append("TensorFlow (.h5)")
+        if loaded:
+            print(f"🔀 Parallel inference enabled with: {', '.join(loaded)}")
+        else:
+            print("⚠️ No model files loaded. Using mock predictions.")
     
-    def preprocess_image(self, image_path: str) -> np.ndarray:
-        """Preprocess image for model input"""
+    def preprocess_image_tf(self, image_path: str) -> np.ndarray:
+        """Preprocess image for TensorFlow/Keras model input"""
         img = Image.open(image_path)
         img = img.convert('RGB')
-        img = img.resize((224, 224))  # Standard input size for most CNN models
-        img_array = np.array(img) / 255.0  # Normalize
+        img = img.resize((224, 224))
+        img_array = np.array(img) / 255.0  # Normalize to [0, 1]
         img_array = np.expand_dims(img_array, axis=0)
         return img_array
-    
-    def predict(self, image_path: str, crop_type: Optional[str] = None) -> Dict[str, Any]:
-        """Run prediction on the image"""
-        if not self.is_active:
-            raise Exception("AI model is currently disabled")
-        
-        if self.model is not None:
-            # Real prediction using the model
-            try:
-                img_array = self.preprocess_image(image_path)
-                predictions = self.model.predict(img_array)
-                predicted_class_idx = np.argmax(predictions[0])
-                confidence = float(predictions[0][predicted_class_idx]) * 100
-                disease_class = DISEASE_CLASSES[predicted_class_idx]
-            except Exception as e:
-                print(f"Prediction error: {e}")
-                # Fallback to mock prediction
-                return self._mock_prediction(crop_type, image_path)
-        else:
-            # Mock prediction for development/demo
-            return self._mock_prediction(crop_type, image_path)
-        
-        # Parse crop and disease from class name
+
+    def preprocess_image_pt(self, image_path: str):
+        """Preprocess image for PyTorch model input"""
+        import torch  # type: ignore
+        from torchvision import transforms  # type: ignore
+
+        transform = transforms.Compose([
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize(
+                mean=[0.485, 0.456, 0.406],
+                std=[0.229, 0.224, 0.225]
+            ),
+        ])
+        img = Image.open(image_path).convert('RGB')
+        img_tensor = transform(img).unsqueeze(0)  # Add batch dimension
+        return img_tensor.to(self.device)
+
+    def _predict_pytorch(self, image_path: str, crop_type: Optional[str] = None) -> Dict[str, Any]:
+        """Run prediction using PyTorch model"""
+        import torch  # type: ignore
+        img_tensor = self.preprocess_image_pt(image_path)
+        with torch.no_grad():
+            outputs = self.pt_model(img_tensor)
+            probabilities = torch.nn.functional.softmax(outputs, dim=1)
+            confidence_val, predicted_idx = torch.max(probabilities, 1)
+            predicted_class_idx = predicted_idx.item()
+            confidence = confidence_val.item() * 100
+        disease_class = DISEASE_CLASSES[predicted_class_idx]
+        return self._format_result(disease_class, confidence, "pytorch")
+
+    def _predict_tensorflow(self, image_path: str, crop_type: Optional[str] = None) -> Dict[str, Any]:
+        """Run prediction using TensorFlow model"""
+        img_array = self.preprocess_image_tf(image_path)
+        predictions = self.tf_model.predict(img_array, verbose=0)
+        predicted_class_idx = int(np.argmax(predictions[0]))
+        confidence = float(predictions[0][predicted_class_idx]) * 100
+        disease_class = DISEASE_CLASSES[predicted_class_idx]
+        return self._format_result(disease_class, confidence, "tensorflow")
+
+    @staticmethod
+    def _format_result(disease_class: str, confidence: float, model_name: str) -> Dict[str, Any]:
+        """Parse a disease class string into a structured result dict"""
         parts = disease_class.split('___')
         crop_name = parts[0].replace('_', ' ').replace('(', '').replace(')', '')
         disease_name = parts[1].replace('_', ' ') if len(parts) > 1 else 'Unknown'
-        
-        # Determine status
         status = "healthy" if "healthy" in disease_class.lower() else "diseased"
-        
-        # Get treatments
-        treatments = DISEASE_TREATMENTS.get(disease_class, DISEASE_TREATMENTS["default"])
-        
         return {
             "crop_name": crop_name,
             "disease_name": disease_name,
             "confidence": round(confidence, 2),
             "status": status,
-            "treatments": treatments
+            "disease_class": disease_class,
+            "model_used": model_name,
         }
-    
-    def _mock_prediction(self, crop_type: Optional[str] = None, image_path: Optional[str] = None) -> Dict[str, Any]:
-        """Generate intelligent mock prediction based on image analysis"""
-        import random
-        import hashlib
-        
-        # Map crop type to possible diseases
-        crop_diseases = {
-            "tomato": [
-                ("Tomato", "Early blight", "Tomato___Early_blight", 0.35),
-                ("Tomato", "Late blight", "Tomato___Late_blight", 0.25),
-                ("Tomato", "Bacterial spot", "Tomato___Bacterial_spot", 0.20),
-                ("Tomato", "Healthy", "Tomato___healthy", 0.20),
-            ],
-            "potato": [
-                ("Potato", "Early blight", "Potato___Early_blight", 0.35),
-                ("Potato", "Late blight", "Potato___Late_blight", 0.35),
-                ("Potato", "Healthy", "Potato___healthy", 0.30),
-            ],
-            "corn": [
-                ("Corn", "Common rust", "Corn_(Maize)___Common_rust", 0.40),
-                ("Corn", "Northern Leaf Blight", "Corn_(Maize)___Northern_Leaf_Blight", 0.30),
-                ("Corn", "Healthy", "Corn_(Maize)___healthy", 0.30),
-            ],
-            "apple": [
-                ("Apple", "Apple scab", "Apple___Apple_scab", 0.40),
-                ("Apple", "Black rot", "Apple___Black_rot", 0.30),
-                ("Apple", "Healthy", "Apple___healthy", 0.30),
-            ],
-            "grape": [
-                ("Grape", "Black rot", "Grape___Black_rot", 0.40),
-                ("Grape", "Esca (Black Measles)", "Grape___Esca_(Black_Measles)", 0.30),
-                ("Grape", "Healthy", "Grape___healthy", 0.30),
-            ],
-            "pepper": [
-                ("Pepper", "Bacterial spot", "Pepper_bell___Bacterial_spot", 0.50),
-                ("Pepper", "Healthy", "Pepper_bell___healthy", 0.50),
-            ],
-            "strawberry": [
-                ("Strawberry", "Leaf scorch", "Strawberry___Leaf_scorch", 0.50),
-                ("Strawberry", "Healthy", "Strawberry___healthy", 0.50),
-            ],
-            "cherry": [
-                ("Cherry", "Powdery mildew", "Cherry_(including_sour)___Powdery_mildew", 0.50),
-                ("Cherry", "Healthy", "Cherry_(including_sour)___healthy", 0.50),
-            ],
-            "peach": [
-                ("Peach", "Bacterial spot", "Peach___Bacterial_spot", 0.50),
-                ("Peach", "Healthy", "Peach___healthy", 0.50),
-            ],
-        }
-        
-        # Use image hash for consistent predictions per image
-        seed_value = 42
-        if image_path:
-            try:
-                with open(image_path, 'rb') as f:
-                    seed_value = int(hashlib.md5(f.read()).hexdigest()[:8], 16)
-            except:
-                pass
-        
-        random.seed(seed_value)
-        
-        # Get diseases for crop type or analyze image colors to guess crop
-        if crop_type and crop_type.lower() in crop_diseases:
-            diseases = crop_diseases[crop_type.lower()]
-        else:
-            # If no crop type provided, pick based on image characteristics
-            # For demo, use a weighted random selection from all crops
-            all_crops = list(crop_diseases.keys())
-            selected_crop = random.choice(all_crops)
-            diseases = crop_diseases[selected_crop]
-        
-        # Weighted random selection based on disease probability
-        total_weight = sum(d[3] for d in diseases)
-        r = random.uniform(0, total_weight)
-        cumulative = 0
-        selected = diseases[0]
-        for disease in diseases:
-            cumulative += disease[3]
-            if r <= cumulative:
-                selected = disease
-                break
-        
-        crop_name, disease_name, disease_key, _ = selected
-        
-        # Generate realistic confidence (higher for common diseases)
-        base_confidence = random.uniform(82.0, 96.0)
-        if "healthy" in disease_name.lower():
-            confidence = random.uniform(88.0, 98.0)
-        else:
-            confidence = base_confidence
-        
-        status = "healthy" if "Healthy" in disease_name else "diseased"
-        treatments = DISEASE_TREATMENTS.get(disease_key, DISEASE_TREATMENTS["default"])
-        
-        # Reset random seed
-        random.seed()
-        
-        return {
-            "crop_name": crop_name,
-            "disease_name": disease_name,
-            "confidence": round(confidence, 2),
-            "status": status,
-            "treatments": treatments
-        }
+
+    async def predict(self, image_path: str, crop_type: Optional[str] = None) -> Dict[str, Any]:
+        """Run BOTH models in parallel and return the result with the highest confidence"""
+        import asyncio
+
+        if not self.is_active:
+            raise Exception("AI model is currently disabled")
+
+        tasks: list = []
+        labels: list = []
+
+        if self.pt_model is not None:
+            tasks.append(asyncio.to_thread(self._predict_pytorch, image_path, crop_type))
+            labels.append("PyTorch")
+        if self.tf_model is not None:
+            tasks.append(asyncio.to_thread(self._predict_tensorflow, image_path, crop_type))
+            labels.append("TensorFlow")
+
+        if not tasks:
+            raise Exception("No AI models are loaded. Please ensure at least one model file (.pt or .h5) is available.")
+
+        # Run all models concurrently
+        raw_results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        # Collect successful results
+        valid: list = []
+        for label, result in zip(labels, raw_results):
+            if isinstance(result, BaseException):
+                print(f"⚠️ {label} prediction failed: {result}")
+            else:
+                print(f"   {label} → {result['disease_name']}  confidence {result['confidence']:.2f}%")
+                valid.append(result)
+
+        if not valid:
+            raise Exception("All AI models failed during prediction. Please check model files and try again.")
+
+        # Pick the result with the highest confidence
+        best = max(valid, key=lambda r: r["confidence"])
+        print(f"✅ Best result from {best['model_used']} model  —  {best['disease_name']} ({best['confidence']:.2f}%)")
+        return best

@@ -43,7 +43,7 @@ const apiCall = async <T>(
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.message || 'API request failed');
+    throw new Error(data.detail || data.message || 'Something went wrong. Please try again.');
   }
 
   return data;
@@ -76,6 +76,48 @@ export const authApi = {
       method: 'PUT',
       body: JSON.stringify({ currentPassword, newPassword }),
     }),
+
+  logout: () =>
+    apiCall<void>('/auth/logout', {
+      method: 'POST',
+    }),
+
+  forgotPassword: (email: string) =>
+    apiCall<{ resetToken: string; expiresAt: string }>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+
+  resetPassword: (token: string, newPassword: string) =>
+    apiCall<void>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, newPassword }),
+    }),
+
+  sendVerificationEmail: () =>
+    apiCall<{ verificationToken: string }>('/auth/send-verification', {
+      method: 'POST',
+    }),
+
+  verifyEmail: (token: string) =>
+    apiCall<void>('/auth/verify-email', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    }),
+
+  uploadAvatar: async (file: File): Promise<ApiResponse<{ avatar: string }>> => {
+    const token = localStorage.getItem('token');
+    const formData = new FormData();
+    formData.append('avatar', file);
+    const response = await fetch(`${API_BASE_URL}/auth/avatar`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    });
+    return response.json();
+  },
 };
 
 // Prediction API
@@ -97,13 +139,36 @@ export const predictionApi = {
     return response.json();
   },
 
-  getPredictions: (page = 1, limit = 10) =>
-    apiCall<{ predictions: Prediction[]; total: number }>(`/predictions?page=${page}&limit=${limit}`),
+  getPredictions: (page = 1, limit = 10, filters?: {
+    crop?: string; disease?: string; status?: string;
+    dateFrom?: string; dateTo?: string; search?: string;
+  }) => {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    if (filters?.crop) params.append('crop', filters.crop);
+    if (filters?.disease) params.append('disease', filters.disease);
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.dateFrom) params.append('date_from', filters.dateFrom);
+    if (filters?.dateTo) params.append('date_to', filters.dateTo);
+    if (filters?.search) params.append('search', filters.search);
+    return apiCall<{ predictions: Prediction[]; total: number }>(`/predictions?${params.toString()}`);
+  },
 
   getPrediction: (id: string) => apiCall<Prediction>(`/predictions/${id}`),
 
+  getStats: () =>
+    apiCall<{ total: number; healthy: number; diseased: number; verified: number }>('/farmer/stats'),
+
   deletePrediction: (id: string) =>
     apiCall<void>(`/predictions/${id}`, { method: 'DELETE' }),
+
+  submitFeedback: (id: string, correct: boolean) =>
+    apiCall<void>(`/predictions/${id}/feedback`, {
+      method: 'POST',
+      body: JSON.stringify({ correct }),
+    }),
+
+  getFeedback: (id: string) =>
+    apiCall<{ correct: boolean; createdAt: string } | null>(`/predictions/${id}/feedback`),
 
   downloadPDF: async (id: string): Promise<Blob> => {
     const token = localStorage.getItem('token');
@@ -221,6 +286,21 @@ export const cropsApi = {
     apiCall<{ id: string; name: string; diseases: { id: string; name: string }[] }>(`/crops/${id}`),
 };
 
+// Chatbot API
+export const chatbotApi = {
+  sendMessage: (messages: { role: string; content: string }[]) =>
+    apiCall<{ reply: string }>('/chatbot', {
+      method: 'POST',
+      body: JSON.stringify({ messages }),
+    }),
+};
+
+// Health API
+export const healthApi = {
+  check: () =>
+    fetch(`${API_BASE_URL}/health`).then(r => r.json()),
+};
+
 export default {
   auth: authApi,
   predictions: predictionApi,
@@ -228,4 +308,6 @@ export default {
   admin: adminApi,
   notifications: notificationApi,
   crops: cropsApi,
+  chatbot: chatbotApi,
+  health: healthApi,
 };

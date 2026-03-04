@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -32,17 +32,14 @@ import {
   X,
   BarChart3,
   Shield,
+  UserCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  time: string;
-  read: boolean;
-  type: 'info' | 'success' | 'warning';
-}
+import { notificationApi } from '@/services/api';
+import { Notification } from '@/types';
+import ChatBot from '@/components/ChatBot';
+import ThemeToggle from '@/components/ThemeToggle';
+import OnboardingDialog from '@/components/OnboardingDialog';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -53,43 +50,60 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
-  const [notifications, setNotifications] = React.useState<Notification[]>([
-    {
-      id: '1',
-      title: 'Welcome to PlantWise AI',
-      message: 'Start by uploading a plant image for disease detection.',
-      time: '2 hours ago',
-      read: false,
-      type: 'info',
-    },
-    {
-      id: '2',
-      title: 'Prediction Complete',
-      message: 'Your tomato plant analysis is ready to view.',
-      time: '5 hours ago',
-      read: false,
-      type: 'success',
-    },
-    {
-      id: '3',
-      title: 'Expert Review Available',
-      message: 'An officer has reviewed your recent prediction.',
-      time: '1 day ago',
-      read: true,
-      type: 'info',
-    },
-  ]);
+  const [notifications, setNotifications] = React.useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = React.useState(0);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const response = await notificationApi.getNotifications(1, 5);
+      setNotifications(response.data?.notifications || []);
+      setUnreadCount(response.data?.unreadCount || 0);
+    } catch {
+      // Silently fail - don't block the layout
+    }
+  }, []);
 
-  const markAsRead = (id: string) => {
-    setNotifications(prev => 
-      prev.map(n => n.id === id ? { ...n, read: true } : n)
-    );
+  useEffect(() => {
+    fetchNotifications();
+    // Poll for new notifications every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
+
+  const markAsRead = async (id: string) => {
+    try {
+      await notificationApi.markAsRead(id);
+      setNotifications(prev =>
+        prev.map(n => n.id === id ? { ...n, isRead: true } : n)
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch {
+      // Silently fail
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  const markAllAsRead = async () => {
+    try {
+      await notificationApi.markAllAsRead();
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+    } catch {
+      // Silently fail
+    }
+  };
+
+  const formatTime = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
   };
 
   const handleLogout = () => {
@@ -107,6 +121,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         ...baseItems,
         { href: '/upload', label: 'Upload Image', icon: Upload },
         { href: '/predictions', label: 'My Predictions', icon: History },
+        { href: '/profile', label: 'My Profile', icon: UserCircle },
       ];
     }
 
@@ -245,6 +260,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             <div className="flex-1 lg:flex-none" />
 
             <div className="flex items-center gap-2">
+              {/* Theme Toggle */}
+              <ThemeToggle />
+
               {/* Notifications */}
               <Popover>
                 <PopoverTrigger asChild>
@@ -284,21 +302,24 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                             key={notification.id}
                             className={cn(
                               "p-4 hover:bg-pistage/50 cursor-pointer transition-colors",
-                              !notification.read && "bg-ever-green/10"
+                              !notification.isRead && "bg-ever-green/10"
                             )}
-                            onClick={() => markAsRead(notification.id)}
+                            onClick={() => {
+                              if (!notification.isRead) markAsRead(notification.id);
+                              if (notification.link) navigate(notification.link);
+                            }}
                           >
                             <div className="flex items-start gap-3">
                               <div className={cn(
                                 "w-2 h-2 mt-2 rounded-full flex-shrink-0",
-                                notification.type === 'success' && "bg-early-green",
-                                notification.type === 'warning' && "bg-yellow-500",
-                                notification.type === 'info' && "bg-calm-green"
+                                notification.type === 'prediction_ready' && "bg-early-green",
+                                notification.type === 'role_change' && "bg-yellow-500",
+                                (notification.type === 'system_alert' || notification.type === 'review_request') && "bg-calm-green"
                               )} />
                               <div className="flex-1 min-w-0">
                                 <p className={cn(
                                   "text-sm",
-                                  !notification.read && "font-medium text-calm-green"
+                                  !notification.isRead && "font-medium text-calm-green"
                                 )}>
                                   {notification.title}
                                 </p>
@@ -306,7 +327,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                                   {notification.message}
                                 </p>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                  {notification.time}
+                                  {formatTime(notification.createdAt)}
                                 </p>
                               </div>
                             </div>
@@ -364,6 +385,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         {/* Page content */}
         <main className="p-4 md:p-6 lg:p-8">{children}</main>
       </div>
+
+      {/* Floating Chatbot */}
+      <ChatBot />
+
+      {/* Onboarding for new farmers */}
+      <OnboardingDialog />
     </div>
   );
 };

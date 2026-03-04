@@ -7,6 +7,8 @@ export interface User {
   name: string;
   role: UserRole;
   isActive: boolean;
+  phone?: string;
+  location?: string;
   createdAt: string;
   updatedAt: string;
   avatar?: string;
@@ -112,6 +114,20 @@ export interface RegisterFormData {
   email: string;
   password: string;
   confirmPassword: string;
+}
+
+export interface ProfileFormData {
+  name?: string;
+  phone?: string;
+  location?: string;
+}
+
+export interface Feedback {
+  id: string;
+  predictionId: string;
+  userId: string;
+  correct: boolean;
+  createdAt: string;
 }
 
 export interface UploadFormData {
