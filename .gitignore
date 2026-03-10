@@ -36,7 +36,6 @@ __pycache__/
 venv/
 
 # Uploads
-backend/uploads/*
 !backend/uploads/.gitkeep
 temp/
 diagrams/
