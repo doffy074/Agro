@@ -57,8 +57,8 @@ const ReviewPrediction: React.FC = () => {
         if (response.data) {
           setPrediction(response.data);
         }
-      } catch (err: any) {
-        setError(err.message || 'Failed to load prediction');
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Failed to load prediction');
       } finally {
         setIsLoading(false);
       }
@@ -89,8 +89,8 @@ const ReviewPrediction: React.FC = () => {
         isCorrect === 'incorrect' ? correctedDisease : undefined
       );
       navigate('/officer/reviews');
-    } catch (err: any) {
-      setError(err.message || 'Failed to submit review');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to submit review');
     } finally {
       setIsSubmitting(false);
     }
@@ -106,8 +106,8 @@ const ReviewPrediction: React.FC = () => {
       await officerApi.flagPrediction(id, flagReason);
       setFlagModalOpen(false);
       navigate('/officer/reviews');
-    } catch (err: any) {
-      setError(err.message || 'Failed to flag prediction');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to flag prediction');
     } finally {
       setIsSubmitting(false);
     }
@@ -147,9 +147,13 @@ const ReviewPrediction: React.FC = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-calm-green">Review Prediction</h1>
+            <h1 className="text-2xl font-bold text-calm-green">
+              {prediction.isVerified ? 'View Prediction' : 'Review Prediction'}
+            </h1>
             <p className="text-sm text-muted-foreground">
-              Verify the AI prediction and provide expert feedback
+              {prediction.isVerified
+                ? 'Viewing previously reviewed prediction'
+                : 'Verify the AI prediction and provide expert feedback'}
             </p>
           </div>
         </div>
@@ -210,90 +214,119 @@ const ReviewPrediction: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Review Form */}
+          {/* Review Form or Read-Only Review */}
           <Card className="border-matcha/30">
-            <CardHeader>
-              <CardTitle className="text-calm-green">Your Review</CardTitle>
-              <CardDescription>Verify or correct the AI prediction</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-3">
-                <Label>Is the AI prediction correct?</Label>
-                <RadioGroup value={isCorrect} onValueChange={setIsCorrect}>
-                  <div className="flex items-center space-x-2 p-3 rounded-lg border border-matcha/20 hover:bg-pistage cursor-pointer">
-                    <RadioGroupItem value="correct" id="correct" />
-                    <Label htmlFor="correct" className="flex items-center gap-2 cursor-pointer flex-1">
-                      <CheckCircle2 className="w-5 h-5 text-early-green" />
-                      <div>
-                        <p className="font-medium">Correct</p>
-                        <p className="text-xs text-muted-foreground">AI prediction is accurate</p>
-                      </div>
-                    </Label>
+            {prediction.isVerified ? (
+              <>
+                <CardHeader>
+                  <CardTitle className="text-calm-green flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-early-green" />
+                    Review Summary
+                  </CardTitle>
+                  <CardDescription>This prediction has already been reviewed</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="p-3 rounded-lg border border-early-green/30 bg-early-green/10">
+                    <p className="text-sm font-medium text-calm-green mb-1">Verdict</p>
+                    <Badge className="bg-early-green">Verified</Badge>
                   </div>
-                  <div className="flex items-center space-x-2 p-3 rounded-lg border border-matcha/20 hover:bg-pistage cursor-pointer">
-                    <RadioGroupItem value="incorrect" id="incorrect" />
-                    <Label htmlFor="incorrect" className="flex items-center gap-2 cursor-pointer flex-1">
-                      <XCircle className="w-5 h-5 text-destructive" />
-                      <div>
-                        <p className="font-medium">Incorrect</p>
-                        <p className="text-xs text-muted-foreground">AI prediction needs correction</p>
-                      </div>
-                    </Label>
-                  </div>
-                </RadioGroup>
-              </div>
 
-              {isCorrect === 'incorrect' && (
-                <div className="space-y-2">
-                  <Label htmlFor="correctedDisease">Correct Disease Name *</Label>
-                  <Input
-                    id="correctedDisease"
-                    placeholder="Enter the correct disease name"
-                    value={correctedDisease}
-                    onChange={(e) => setCorrectedDisease(e.target.value)}
-                  />
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <Label htmlFor="comments">Expert Comments *</Label>
-                <Textarea
-                  id="comments"
-                  placeholder="Provide your expert analysis and any additional recommendations..."
-                  value={comments}
-                  onChange={(e) => setComments(e.target.value)}
-                  rows={4}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Your comments will be visible to the farmer
-                </p>
-              </div>
-
-              <div className="flex flex-col gap-3">
-                <Button
-                  className="w-full bg-calm-green hover:bg-resting-green text-white"
-                  onClick={handleSubmit}
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <Send className="w-4 h-4 mr-2" />
+                  {prediction.officerComments && (
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-calm-green">Officer Comments</p>
+                      <p className="text-sm text-muted-foreground bg-pistage p-3 rounded-lg">
+                        {prediction.officerComments}
+                      </p>
+                    </div>
                   )}
-                  Submit Review
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  className="w-full border-destructive text-destructive hover:bg-destructive/10"
-                  onClick={() => setFlagModalOpen(true)}
-                  disabled={isSubmitting}
-                >
-                  <Flag className="w-4 h-4 mr-2" />
-                  Flag as Problematic
-                </Button>
-              </div>
-            </CardContent>
+                </CardContent>
+              </>
+            ) : (
+              <>
+                <CardHeader>
+                  <CardTitle className="text-calm-green">Your Review</CardTitle>
+                  <CardDescription>Verify or correct the AI prediction</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-3">
+                    <Label>Is the AI prediction correct?</Label>
+                    <RadioGroup value={isCorrect} onValueChange={setIsCorrect}>
+                      <div className="flex items-center space-x-2 p-3 rounded-lg border border-matcha/20 hover:bg-pistage cursor-pointer">
+                        <RadioGroupItem value="correct" id="correct" />
+                        <Label htmlFor="correct" className="flex items-center gap-2 cursor-pointer flex-1">
+                          <CheckCircle2 className="w-5 h-5 text-early-green" />
+                          <div>
+                            <p className="font-medium">Correct</p>
+                            <p className="text-xs text-muted-foreground">AI prediction is accurate</p>
+                          </div>
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2 p-3 rounded-lg border border-matcha/20 hover:bg-pistage cursor-pointer">
+                        <RadioGroupItem value="incorrect" id="incorrect" />
+                        <Label htmlFor="incorrect" className="flex items-center gap-2 cursor-pointer flex-1">
+                          <XCircle className="w-5 h-5 text-destructive" />
+                          <div>
+                            <p className="font-medium">Incorrect</p>
+                            <p className="text-xs text-muted-foreground">AI prediction needs correction</p>
+                          </div>
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
+                  {isCorrect === 'incorrect' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="correctedDisease">Correct Disease Name *</Label>
+                      <Input
+                        id="correctedDisease"
+                        placeholder="Enter the correct disease name"
+                        value={correctedDisease}
+                        onChange={(e) => setCorrectedDisease(e.target.value)}
+                      />
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label htmlFor="comments">Expert Comments *</Label>
+                    <Textarea
+                      id="comments"
+                      placeholder="Provide your expert analysis and any additional recommendations..."
+                      value={comments}
+                      onChange={(e) => setComments(e.target.value)}
+                      rows={4}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Your comments will be visible to the farmer
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col gap-3">
+                    <Button
+                      className="w-full bg-calm-green hover:bg-resting-green text-white"
+                      onClick={handleSubmit}
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Send className="w-4 h-4 mr-2" />
+                      )}
+                      Submit Review
+                    </Button>
+                    
+                    <Button
+                      variant="outline"
+                      className="w-full border-destructive text-destructive hover:bg-destructive/10"
+                      onClick={() => setFlagModalOpen(true)}
+                      disabled={isSubmitting}
+                    >
+                      <Flag className="w-4 h-4 mr-2" />
+                      Flag as Problematic
+                    </Button>
+                  </div>
+                </CardContent>
+              </>
+            )}
           </Card>
         </div>
 
