@@ -477,7 +477,8 @@ async def reset_password(data: PasswordResetConfirm):
 
     # Check expiry
     expires = datetime.fromisoformat(record["expiresAt"])
-    if datetime.now(timezone.utc) > expires.replace(tzinfo=timezone.utc) if expires.tzinfo is None else expires:
+    aware_expires = expires.replace(tzinfo=timezone.utc) if expires.tzinfo is None else expires
+    if datetime.now(timezone.utc) > aware_expires:
         await db.delete_reset_token(token_hash)
         raise HTTPException(status_code=400, detail="Reset token has expired")
 

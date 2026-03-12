@@ -412,10 +412,10 @@ class Database:
             offset = (page - 1) * limit
             
             cursor = await db.execute(
-                "SELECT * FROM predictions WHERE isVerified = 0 AND isFlagged = 0 ORDER BY createdAt ASC LIMIT ? OFFSET ?",
+                "SELECT * FROM predictions WHERE isVerified = 0 ORDER BY createdAt ASC LIMIT ? OFFSET ?",
                 (limit, offset)
             )
-            count_cursor = await db.execute("SELECT COUNT(*) FROM predictions WHERE isVerified = 0 AND isFlagged = 0")
+            count_cursor = await db.execute("SELECT COUNT(*) FROM predictions WHERE isVerified = 0")
             
             rows = await cursor.fetchall()
             total = (await count_cursor.fetchone())[0]
@@ -434,7 +434,9 @@ class Database:
                     "createdAt": row["createdAt"],
                     "isVerified": bool(row["isVerified"]),
                     "verifiedBy": row["verifiedBy"],
-                    "officerComments": row["officerComments"]
+                    "officerComments": row["officerComments"],
+                    "isFlagged": bool(row["isFlagged"]),
+                    "flagReason": row["flagReason"]
                 })
             
             return predictions, total
@@ -446,10 +448,10 @@ class Database:
             offset = (page - 1) * limit
             
             cursor = await db.execute(
-                "SELECT * FROM predictions WHERE isVerified = 1 OR isFlagged = 1 ORDER BY COALESCE(verifiedAt, createdAt) DESC LIMIT ? OFFSET ?",
+                "SELECT * FROM predictions WHERE isVerified = 1 ORDER BY COALESCE(verifiedAt, createdAt) DESC LIMIT ? OFFSET ?",
                 (limit, offset)
             )
-            count_cursor = await db.execute("SELECT COUNT(*) FROM predictions WHERE isVerified = 1 OR isFlagged = 1")
+            count_cursor = await db.execute("SELECT COUNT(*) FROM predictions WHERE isVerified = 1")
             
             rows = await cursor.fetchall()
             total = (await count_cursor.fetchone())[0]
