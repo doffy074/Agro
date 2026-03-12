@@ -3,6 +3,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
+import {
   Activity,
   ChevronLeft,
   ChevronRight,
@@ -12,6 +20,9 @@ import {
   FileText,
   AlertTriangle,
   Clock,
+  Eye,
+  Hash,
+  Globe,
 } from 'lucide-react';
 import { adminApi } from '@/services/api';
 import { AuditLog } from '@/types';
@@ -21,6 +32,7 @@ const AuditLogs: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
   const pageSize = 20;
 
   useEffect(() => {
@@ -138,6 +150,15 @@ const AuditLogs: React.FC = () => {
                         )}
                       </div>
                     </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-matcha text-calm-green hover:bg-pistage flex-shrink-0"
+                      onClick={() => setSelectedLog(log)}
+                    >
+                      <Eye className="w-4 h-4 mr-1" />
+                      View
+                    </Button>
                   </div>
                 ))}
               </div>
@@ -172,6 +193,73 @@ const AuditLogs: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Audit Log Detail Modal */}
+      <Dialog open={!!selectedLog} onOpenChange={(open) => !open && setSelectedLog(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-calm-green">
+              {selectedLog && getActionIcon(selectedLog.action)}
+              Audit Log Details
+            </DialogTitle>
+            <DialogDescription>Full details of the recorded event</DialogDescription>
+          </DialogHeader>
+          {selectedLog && (
+            <div className="space-y-4 py-2">
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-calm-green">{selectedLog.action}</span>
+                {getActionBadge(selectedLog.action)}
+              </div>
+
+              <Separator />
+
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <FileText className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase">Details</p>
+                    <p className="text-sm">{selectedLog.details}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <User className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase">Performed By</p>
+                    <p className="text-sm">{selectedLog.userName}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <Hash className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase">User ID</p>
+                    <p className="text-xs font-mono">{selectedLog.userId}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <Clock className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase">Timestamp</p>
+                    <p className="text-sm">{new Date(selectedLog.timestamp).toLocaleString()}</p>
+                  </div>
+                </div>
+
+                {selectedLog.ipAddress && (
+                  <div className="flex items-start gap-3">
+                    <Globe className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground uppercase">IP Address</p>
+                      <p className="text-sm font-mono">{selectedLog.ipAddress}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

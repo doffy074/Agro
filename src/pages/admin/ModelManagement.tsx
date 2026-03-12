@@ -22,14 +22,18 @@ import { adminApi } from '@/services/api';
 
 interface ModelInfo {
   name: string;
+  displayName: string;
+  type: string;
   version: string;
   accuracy: number;
   lastTrained: string;
   isActive: boolean;
+  isLoaded: boolean;
 }
 
 const ModelManagement: React.FC = () => {
-  const [model, setModel] = useState<ModelInfo | null>(null);
+  const [models, setModels] = useState<ModelInfo[]>([]);
+  const [globalActive, setGlobalActive] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isToggling, setIsToggling] = useState(false);
 
@@ -42,7 +46,8 @@ const ModelManagement: React.FC = () => {
     try {
       const response = await adminApi.getModelInfo();
       if (response.data) {
-        setModel(response.data);
+        setModels(response.data.models);
+        setGlobalActive(response.data.isActive);
       }
     } catch (error) {
       console.error('Failed to fetch model info:', error);
@@ -55,7 +60,8 @@ const ModelManagement: React.FC = () => {
     setIsToggling(true);
     try {
       await adminApi.toggleModel(isActive);
-      setModel((prev) => prev ? { ...prev, isActive } : null);
+      setGlobalActive(isActive);
+      setModels((prev) => prev.map((m) => ({ ...m, isActive: isActive && m.isLoaded })));
     } catch (error) {
       console.error('Failed to toggle model:', error);
     } finally {
@@ -81,88 +87,99 @@ const ModelManagement: React.FC = () => {
           <p className="text-muted-foreground">Monitor and control the plant disease detection model</p>
         </div>
 
-        {/* Model status card */}
-        <Card className="border-matcha/30">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                  model?.isActive ? 'bg-early-green/10' : 'bg-destructive/10'
-                }`}>
-                  <Cpu className={`w-6 h-6 ${model?.isActive ? 'text-early-green' : 'text-destructive'}`} />
+        {/* Model status cards */}
+        {models.map((m) => (
+          <Card key={m.name} className="border-matcha/30">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                    m.isActive ? 'bg-early-green/10' : 'bg-destructive/10'
+                  }`}>
+                    <Cpu className={`w-6 h-6 ${m.isActive ? 'text-early-green' : 'text-destructive'}`} />
+                  </div>
+                  <div>
+                    <CardTitle className="text-calm-green">{m.displayName}</CardTitle>
+                    <CardDescription>{m.type} based classifier</CardDescription>
+                  </div>
                 </div>
-                <div>
-                  <CardTitle className="text-calm-green">Plant Disease Detection Model</CardTitle>
-                  <CardDescription>CNN / Transfer Learning based classifier</CardDescription>
+                <div className="flex items-center gap-2">
+                  {!m.isLoaded && (
+                    <Badge variant="outline" className="border-yellow-500 text-yellow-600">
+                      Not Loaded
+                    </Badge>
+                  )}
+                  <Badge className={m.isActive ? 'bg-early-green text-white' : 'bg-destructive'}>
+                    {m.isActive ? 'Active' : 'Inactive'}
+                  </Badge>
                 </div>
               </div>
-              <Badge className={model?.isActive ? 'bg-early-green text-white' : 'bg-destructive'}>
-                {model?.isActive ? 'Active' : 'Inactive'}
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid md:grid-cols-3 gap-4">
-              <div className="p-4 bg-pistage rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <Database className="w-4 h-4 text-calm-green" />
-                  <span className="text-sm text-muted-foreground">Model Name</span>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid md:grid-cols-3 gap-4">
+                <div className="p-4 bg-pistage rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Database className="w-4 h-4 text-calm-green" />
+                    <span className="text-sm text-muted-foreground">Model Name</span>
+                  </div>
+                  <p className="font-semibold text-calm-green">{m.name}</p>
                 </div>
-                <p className="font-semibold text-calm-green">{model?.name || 'plant_disease_model'}</p>
+                <div className="p-4 bg-pistage rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Activity className="w-4 h-4 text-calm-green" />
+                    <span className="text-sm text-muted-foreground">Version</span>
+                  </div>
+                  <p className="font-semibold text-calm-green">{m.version}</p>
+                </div>
+                <div className="p-4 bg-pistage rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Clock className="w-4 h-4 text-calm-green" />
+                    <span className="text-sm text-muted-foreground">Last Trained</span>
+                  </div>
+                  <p className="font-semibold text-calm-green">
+                    {m.lastTrained ? new Date(m.lastTrained).toLocaleDateString() : 'N/A'}
+                  </p>
+                </div>
               </div>
-              <div className="p-4 bg-pistage rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <Activity className="w-4 h-4 text-calm-green" />
-                  <span className="text-sm text-muted-foreground">Version</span>
+
+              <Separator />
+
+              {/* Accuracy */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4 text-calm-green" />
+                    <span className="font-medium text-calm-green">Model Accuracy</span>
+                  </div>
+                  <span className="text-xl font-bold text-early-green">
+                    {m.accuracy?.toFixed(1) || 0}%
+                  </span>
                 </div>
-                <p className="font-semibold text-calm-green">{model?.version || 'v1.0.0'}</p>
-              </div>
-              <div className="p-4 bg-pistage rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <Clock className="w-4 h-4 text-calm-green" />
-                  <span className="text-sm text-muted-foreground">Last Trained</span>
-                </div>
-                <p className="font-semibold text-calm-green">
-                  {model?.lastTrained ? new Date(model.lastTrained).toLocaleDateString() : 'N/A'}
+                <Progress value={m.accuracy || 0} className="h-3" />
+                <p className="text-xs text-muted-foreground mt-2">
+                  Based on validation dataset performance
                 </p>
               </div>
-            </div>
+            </CardContent>
+          </Card>
+        ))}
 
-            <Separator />
-
-            {/* Accuracy */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <BarChart3 className="w-4 h-4 text-calm-green" />
-                  <span className="font-medium text-calm-green">Model Accuracy</span>
-                </div>
-                <span className="text-xl font-bold text-early-green">
-                  {model?.accuracy?.toFixed(1) || 0}%
-                </span>
-              </div>
-              <Progress value={model?.accuracy || 0} className="h-3" />
-              <p className="text-xs text-muted-foreground mt-2">
-                Based on validation dataset performance
-              </p>
-            </div>
-
-            <Separator />
-
-            {/* Model control */}
+        {/* Global Model Status Toggle */}
+        <Card className="border-matcha/30">
+          <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Power className={model?.isActive ? 'w-5 h-5 text-early-green' : 'w-5 h-5 text-destructive'} />
+                <Power className={globalActive ? 'w-5 h-5 text-early-green' : 'w-5 h-5 text-destructive'} />
                 <div>
                   <Label htmlFor="model-toggle" className="text-base font-medium">Model Status</Label>
                   <p className="text-sm text-muted-foreground">
-                    {model?.isActive ? 'Model is accepting predictions' : 'Model is currently disabled'}
+                    {globalActive ? 'Models are accepting predictions' : 'Models are currently disabled'}
                   </p>
                 </div>
               </div>
               <Switch
                 id="model-toggle"
-                checked={model?.isActive}
+                checked={globalActive}
                 onCheckedChange={handleToggleModel}
                 disabled={isToggling}
               />

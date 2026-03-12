@@ -246,10 +246,16 @@ export const adminApi = {
 
   getModelInfo: () =>
     apiCall<{
-      name: string;
-      version: string;
-      accuracy: number;
-      lastTrained: string;
+      models: {
+        name: string;
+        displayName: string;
+        type: string;
+        version: string;
+        accuracy: number;
+        lastTrained: string;
+        isActive: boolean;
+        isLoaded: boolean;
+      }[];
       isActive: boolean;
     }>('/admin/model'),
 

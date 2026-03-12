@@ -37,6 +37,8 @@ export interface Prediction {
   isVerified: boolean;
   verifiedBy?: string;
   officerComments?: string;
+  isFlagged?: boolean;
+  flagReason?: string;
 }
 
 export interface Treatment {

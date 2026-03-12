@@ -41,3 +41,5 @@ temp/
 diagrams/
 SETUP_GUIDE.md
 .agent/
+backend/uploads/
+backend/plantwise.db

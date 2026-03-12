@@ -13,6 +13,7 @@ import {
   Loader2,
   Eye,
   Leaf,
+  Flag,
 } from 'lucide-react';
 import { officerApi } from '@/services/api';
 import { Prediction } from '@/types';
@@ -82,7 +83,7 @@ const ReviewedPredictions: React.FC = () => {
             Reviewed
           </CardTitle>
           <CardDescription>
-            {filteredPredictions.length} prediction{filteredPredictions.length !== 1 ? 's' : ''} reviewed
+            Showing {filteredPredictions.length} of {total} prediction{total !== 1 ? 's' : ''} reviewed
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -110,10 +111,17 @@ const ReviewedPredictions: React.FC = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-medium text-calm-green">{prediction.cropName}</p>
-                      <Badge variant="secondary" className="bg-early-green/20 text-early-green">
-                        <CheckCircle2 className="w-3 h-3 mr-1" />
-                        Reviewed
-                      </Badge>
+                      {prediction.isFlagged ? (
+                        <Badge variant="destructive">
+                          <Flag className="w-3 h-3 mr-1" />
+                          Flagged
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="bg-early-green/20 text-early-green">
+                          <CheckCircle2 className="w-3 h-3 mr-1" />
+                          Reviewed
+                        </Badge>
+                      )}
                     </div>
                     <p className="text-sm text-muted-foreground">
                       Disease: <span className="font-medium">{prediction.diseaseName}</span>
@@ -121,6 +129,11 @@ const ReviewedPredictions: React.FC = () => {
                     <p className="text-sm text-muted-foreground">
                       Confidence: <span className="font-medium">{prediction.confidence.toFixed(1)}%</span>
                     </p>
+                    {prediction.isFlagged && prediction.flagReason && (
+                      <p className="text-xs text-destructive mt-1 truncate">
+                        Flag reason: {prediction.flagReason}
+                      </p>
+                    )}
                     {prediction.officerComments && (
                       <p className="text-xs text-muted-foreground mt-1 truncate">
                         Your comment: {prediction.officerComments}
