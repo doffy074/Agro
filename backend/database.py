@@ -56,6 +56,12 @@ async def init_db():
             )
         """)
         
+        # Add verifiedAt column if it doesn't exist (migration)
+        try:
+            await db.execute("ALTER TABLE predictions ADD COLUMN verifiedAt TEXT")
+        except:
+            pass
+        
         # Audit logs table
         await db.execute("""
             CREATE TABLE IF NOT EXISTS audit_logs (
@@ -406,7 +412,7 @@ class Database:
             offset = (page - 1) * limit
             
             cursor = await db.execute(
-                "SELECT * FROM predictions WHERE isVerified = 0 AND isFlagged = 0 ORDER BY createdAt DESC LIMIT ? OFFSET ?",
+                "SELECT * FROM predictions WHERE isVerified = 0 AND isFlagged = 0 ORDER BY createdAt ASC LIMIT ? OFFSET ?",
                 (limit, offset)
             )
             count_cursor = await db.execute("SELECT COUNT(*) FROM predictions WHERE isVerified = 0 AND isFlagged = 0")
@@ -440,7 +446,7 @@ class Database:
             offset = (page - 1) * limit
             
             cursor = await db.execute(
-                "SELECT * FROM predictions WHERE isVerified = 1 OR isFlagged = 1 ORDER BY createdAt DESC LIMIT ? OFFSET ?",
+                "SELECT * FROM predictions WHERE isVerified = 1 OR isFlagged = 1 ORDER BY COALESCE(verifiedAt, createdAt) DESC LIMIT ? OFFSET ?",
                 (limit, offset)
             )
             count_cursor = await db.execute("SELECT COUNT(*) FROM predictions WHERE isVerified = 1 OR isFlagged = 1")
@@ -487,9 +493,10 @@ class Database:
     
     async def flag_prediction(self, prediction_id: str, reason: str, flagged_by: str) -> None:
         async with aiosqlite.connect(self.db_path) as db:
+            now = datetime.utcnow().isoformat()
             await db.execute(
-                "UPDATE predictions SET isFlagged = 1, flagReason = ? WHERE id = ?",
-                (reason, prediction_id)
+                "UPDATE predictions SET isFlagged = 1, flagReason = ?, verifiedAt = ? WHERE id = ?",
+                (reason, now, prediction_id)
             )
             await db.commit()
     

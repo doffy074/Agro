@@ -879,7 +879,8 @@ async def verify_prediction(
     updates = {
         "isVerified": True,
         "verifiedBy": user["id"],
-        "officerComments": data.comments
+        "officerComments": data.comments,
+        "verifiedAt": datetime.utcnow().isoformat()
     }
     
     if not data.isCorrect and data.correctedDisease:
