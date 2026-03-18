@@ -1,0 +1,244 @@
+digraph ArchitectureDiagram {
+    rankdir=TB;
+    bgcolor="white";
+    fontname="Arial";
+    node [fontname="Arial", shape=box, style="rounded,filled"];
+    edge [fontname="Arial"];
+    compound=true;
+    
+    // Title
+    labelloc="t";
+    label="PlantWise AI - System Architecture Diagram";
+    fontsize=20;
+    
+    // Client Layer
+    subgraph cluster_client {
+        label="Client Layer (Frontend)";
+        style=filled;
+        fillcolor="#E3F2FD";
+        color="#64B5F6";
+        
+        subgraph cluster_react {
+            label="React + TypeScript + Vite";
+            style=filled;
+            fillcolor="#BBDEFB";
+            color="#42A5F5";
+            
+            ReactApp [label="React Application\n(Vite Build)", fillcolor="white"];
+            
+            subgraph cluster_pages {
+                label="Pages";
+                style=filled;
+                fillcolor="#E1F5FE";
+                
+                IndexPage [label="Landing Page", fillcolor="white"];
+                AuthPages [label="Auth Pages\n(Login/Register)", fillcolor="white"];
+                FarmerPages [label="Farmer Dashboard\nImageUpload\nPredictionHistory\nPredictionResult", fillcolor="white"];
+                OfficerPages [label="Officer Dashboard\nPendingReviews\nReviewPrediction\nStatistics", fillcolor="white"];
+                AdminPages [label="Admin Dashboard\nUserManagement\nRoleAssignment\nAuditLogs\nModelManagement", fillcolor="white"];
+            }
+            
+            subgraph cluster_components {
+                label="Components";
+                style=filled;
+                fillcolor="#E1F5FE";
+                
+                UIComponents [label="UI Components\n(shadcn/ui)", fillcolor="white"];
+                LayoutComponents [label="Layout Components\n(DashboardLayout)", fillcolor="white"];
+                AuthComponents [label="Auth Components\n(ProtectedRoute)", fillcolor="white"];
+            }
+            
+            subgraph cluster_state {
+                label="State Management";
+                style=filled;
+                fillcolor="#E1F5FE";
+                
+                AuthContext [label="AuthContext\n(User State)", fillcolor="white"];
+                ReactQuery [label="TanStack Query\n(Server State)", fillcolor="white"];
+            }
+            
+            subgraph cluster_services {
+                label="API Services";
+                style=filled;
+                fillcolor="#E1F5FE";
+                
+                APIService [label="API Service Layer\n(authApi, predictionApi,\nofficerApi, adminApi,\nnotificationApi)", fillcolor="white"];
+            }
+        }
+    }
+    
+    // API Layer
+    subgraph cluster_api {
+        label="API Layer (Backend)";
+        style=filled;
+        fillcolor="#E8F5E9";
+        color="#81C784";
+        
+        subgraph cluster_fastapi {
+            label="FastAPI Application";
+            style=filled;
+            fillcolor="#C8E6C9";
+            color="#66BB6A";
+            
+            CORSMiddleware [label="CORS Middleware", fillcolor="white"];
+            
+            subgraph cluster_auth_endpoints {
+                label="Auth Endpoints";
+                style=filled;
+                fillcolor="#DCEDC8";
+                
+                RegisterEndpoint [label="/api/auth/register\nPOST", fillcolor="white"];
+                LoginEndpoint [label="/api/auth/login\nPOST", fillcolor="white"];
+                MeEndpoint [label="/api/auth/me\nGET", fillcolor="white"];
+            }
+            
+            subgraph cluster_prediction_endpoints {
+                label="Prediction Endpoints";
+                style=filled;
+                fillcolor="#DCEDC8";
+                
+                UploadEndpoint [label="/api/predictions/upload\nPOST (FormData)", fillcolor="white"];
+                GetPredictionsEndpoint [label="/api/predictions\nGET", fillcolor="white"];
+                GetPredictionEndpoint [label="/api/predictions/{id}\nGET", fillcolor="white"];
+            }
+            
+            subgraph cluster_officer_endpoints {
+                label="Officer Endpoints";
+                style=filled;
+                fillcolor="#DCEDC8";
+                
+                ReviewsEndpoint [label="/api/officer/reviews\nGET", fillcolor="white"];
+                VerifyEndpoint [label="/api/officer/verify/{id}\nPOST", fillcolor="white"];
+                FlagEndpoint [label="/api/officer/flag/{id}\nPOST", fillcolor="white"];
+                StatsEndpoint [label="/api/officer/statistics\nGET", fillcolor="white"];
+            }
+            
+            subgraph cluster_admin_endpoints {
+                label="Admin Endpoints";
+                style=filled;
+                fillcolor="#DCEDC8";
+                
+                MetricsEndpoint [label="/api/admin/metrics\nGET", fillcolor="white"];
+                UsersEndpoint [label="/api/admin/users\nGET/PUT/DELETE", fillcolor="white"];
+                AuditEndpoint [label="/api/admin/audit-logs\nGET", fillcolor="white"];
+                ModelEndpoint [label="/api/admin/model\nGET/POST", fillcolor="white"];
+            }
+        }
+        
+        subgraph cluster_security {
+            label="Security Layer";
+            style=filled;
+            fillcolor="#F1F8E9";
+            
+            JWTAuth [label="JWT Authentication\n(HTTPBearer)", fillcolor="white"];
+            RoleGuard [label="Role-Based\nAccess Control", fillcolor="white"];
+            PasswordHash [label="BCrypt\nPassword Hashing", fillcolor="white"];
+        }
+    }
+    
+    // AI/ML Layer
+    subgraph cluster_ai {
+        label="AI/ML Layer";
+        style=filled;
+        fillcolor="#FFF3E0";
+        color="#FFB74D";
+        
+        subgraph cluster_model {
+            label="Plant Disease Model";
+            style=filled;
+            fillcolor="#FFE0B2";
+            color="#FFA726";
+            
+            AIModel [label="PlantDiseaseModel\n(TensorFlow/Keras)", fillcolor="white"];
+            ModelFile [label="plant_disease_model.h5\n(Pre-trained CNN)", fillcolor="white"];
+            ImagePreprocessor [label="Image Preprocessor\n(PIL, NumPy)\n224x224 RGB", fillcolor="white"];
+            DiseaseClassifier [label="Disease Classifier\n(33 Classes)\nPlantVillage Dataset", fillcolor="white"];
+        }
+        
+        subgraph cluster_treatments {
+            label="Treatment Engine";
+            style=filled;
+            fillcolor="#FFE0B2";
+            
+            TreatmentDB [label="Treatment Database\n(Organic/Chemical/Preventive)", fillcolor="white"];
+        }
+    }
+    
+    // Data Layer
+    subgraph cluster_data {
+        label="Data Layer";
+        style=filled;
+        fillcolor="#F3E5F5";
+        color="#BA68C8";
+        
+        subgraph cluster_database {
+            label="SQLite Database";
+            style=filled;
+            fillcolor="#E1BEE7";
+            
+            DBClass [label="Database Class\n(aiosqlite)", fillcolor="white"];
+            UsersTable [label="users", fillcolor="white", shape=cylinder];
+            PredictionsTable [label="predictions", fillcolor="white", shape=cylinder];
+            AuditLogsTable [label="audit_logs", fillcolor="white", shape=cylinder];
+            NotificationsTable [label="notifications", fillcolor="white", shape=cylinder];
+        }
+        
+        subgraph cluster_storage {
+            label="File Storage";
+            style=filled;
+            fillcolor="#E1BEE7";
+            
+            UploadsDir [label="uploads/\n(Static Files)", fillcolor="white", shape=folder];
+        }
+    }
+    
+    // External Layer
+    subgraph cluster_external {
+        label="External Services";
+        style=filled;
+        fillcolor="#ECEFF1";
+        color="#90A4AE";
+        
+        Browser [label="Web Browser\n(HTTP/HTTPS)", fillcolor="white"];
+        LocalStorage [label="Local Storage\n(JWT Token)", fillcolor="white"];
+    }
+    
+    // Connections
+    edge [color="#2196F3", penwidth=1.5];
+    
+    // Client to API
+    Browser -> ReactApp [label="HTTP/HTTPS", lhead=cluster_react];
+    ReactApp -> LocalStorage [label="Token Storage", style=dashed];
+    APIService -> CORSMiddleware [label="REST API\nJSON/FormData"];
+    
+    // Auth flow
+    edge [color="#4CAF50"];
+    CORSMiddleware -> JWTAuth [label="Bearer Token"];
+    JWTAuth -> RoleGuard [label="User Context"];
+    
+    // API to AI
+    edge [color="#FF9800"];
+    UploadEndpoint -> ImagePreprocessor [label="Image File"];
+    ImagePreprocessor -> AIModel [label="Tensor (1,224,224,3)"];
+    AIModel -> ModelFile [style=dashed, label="Load Weights"];
+    AIModel -> DiseaseClassifier [label="Inference"];
+    DiseaseClassifier -> TreatmentDB [label="Disease Class"];
+    
+    // API to Database
+    edge [color="#9C27B0"];
+    RegisterEndpoint -> DBClass [label="Create User"];
+    LoginEndpoint -> DBClass [label="Verify User"];
+    UploadEndpoint -> DBClass [label="Store Prediction"];
+    VerifyEndpoint -> DBClass [label="Update Prediction"];
+    UsersEndpoint -> DBClass [label="CRUD Users"];
+    AuditEndpoint -> DBClass [label="Read Logs"];
+    
+    DBClass -> UsersTable;
+    DBClass -> PredictionsTable;
+    DBClass -> AuditLogsTable;
+    DBClass -> NotificationsTable;
+    
+    // File storage
+    edge [color="#607D8B"];
+    UploadEndpoint -> UploadsDir [label="Save Image"];
+}

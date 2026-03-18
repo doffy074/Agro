@@ -1,0 +1,228 @@
+digraph DFDLevel0 {
+    rankdir=LR;
+    bgcolor="white";
+    fontname="Arial";
+    node [fontname="Arial"];
+    edge [fontname="Arial"];
+    
+    // Title
+    labelloc="t";
+    label="PlantWise AI - Data Flow Diagram (Level 0)";
+    fontsize=20;
+    
+    // External Entities (Rectangles)
+    subgraph cluster_external {
+        label="External Entities";
+        style=invis;
+        
+        Farmer [
+            shape=box
+            style="filled"
+            fillcolor="#E3F2FD"
+            label="Farmer\n(User)"
+        ];
+        
+        Officer [
+            shape=box
+            style="filled"
+            fillcolor="#E8F5E9"
+            label="Agricultural\nOfficer"
+        ];
+        
+        Admin [
+            shape=box
+            style="filled"
+            fillcolor="#FFF3E0"
+            label="System\nAdministrator"
+        ];
+        
+        AIService [
+            shape=box
+            style="filled"
+            fillcolor="#FCE4EC"
+            label="TensorFlow\nAI Engine"
+        ];
+    }
+    
+    // Main Process (Circle/Rounded)
+    PlantWiseSystem [
+        shape=ellipse
+        style="filled"
+        fillcolor="#C8E6C9"
+        label="PlantWise AI\nSystem\n(FastAPI Backend)"
+        width=2.5
+        height=1.5
+    ];
+    
+    // Sub-processes
+    AuthProcess [
+        shape=ellipse
+        style="filled"
+        fillcolor="#DCEDC8"
+        label="1.0\nAuthentication\nProcess"
+    ];
+    
+    PredictionProcess [
+        shape=ellipse
+        style="filled"
+        fillcolor="#DCEDC8"
+        label="2.0\nPrediction\nProcess"
+    ];
+    
+    ReviewProcess [
+        shape=ellipse
+        style="filled"
+        fillcolor="#DCEDC8"
+        label="3.0\nReview &\nVerification"
+    ];
+    
+    AdminProcess [
+        shape=ellipse
+        style="filled"
+        fillcolor="#DCEDC8"
+        label="4.0\nAdmin\nManagement"
+    ];
+    
+    NotificationProcess [
+        shape=ellipse
+        style="filled"
+        fillcolor="#DCEDC8"
+        label="5.0\nNotification\nService"
+    ];
+    
+    // Data Stores (Open-ended rectangles simulated)
+    UserDB [
+        shape=box
+        style="filled,bold"
+        fillcolor="#E1BEE7"
+        label="D1 | Users Database"
+    ];
+    
+    PredictionDB [
+        shape=box
+        style="filled,bold"
+        fillcolor="#E1BEE7"
+        label="D2 | Predictions Database"
+    ];
+    
+    AuditDB [
+        shape=box
+        style="filled,bold"
+        fillcolor="#E1BEE7"
+        label="D3 | Audit Logs Database"
+    ];
+    
+    NotificationDB [
+        shape=box
+        style="filled,bold"
+        fillcolor="#E1BEE7"
+        label="D4 | Notifications Database"
+    ];
+    
+    FileStorage [
+        shape=box
+        style="filled,bold"
+        fillcolor="#B3E5FC"
+        label="D5 | Image File Storage\n(uploads/)"
+    ];
+    
+    ModelFile [
+        shape=box
+        style="filled,bold"
+        fillcolor="#FFCCBC"
+        label="D6 | AI Model File\n(plant_disease_model.h5)"
+    ];
+    
+    TreatmentDB [
+        shape=box
+        style="filled,bold"
+        fillcolor="#FFCCBC"
+        label="D7 | Treatment Database\n(In-Memory)"
+    ];
+    
+    // Data Flows from Farmer
+    edge [color="#2196F3", penwidth=1.5];
+    
+    Farmer -> AuthProcess [label="Credentials\n(email, password)"];
+    AuthProcess -> Farmer [label="JWT Token\nUser Profile"];
+    
+    Farmer -> PredictionProcess [label="Plant Image\n(FormData)\nCrop Type"];
+    PredictionProcess -> Farmer [label="Prediction Result\n(Disease, Confidence,\nTreatments)"];
+    
+    Farmer -> NotificationProcess [label="Read Request"];
+    NotificationProcess -> Farmer [label="Notification List"];
+    
+    // Data Flows from Officer
+    edge [color="#4CAF50"];
+    
+    Officer -> AuthProcess [label="Credentials"];
+    AuthProcess -> Officer [label="JWT Token"];
+    
+    Officer -> ReviewProcess [label="Verification Data\n(isCorrect, comments,\ncorrectedDisease)"];
+    ReviewProcess -> Officer [label="Pending Predictions\nStatistics"];
+    
+    // Data Flows from Admin
+    edge [color="#FF9800"];
+    
+    Admin -> AuthProcess [label="Credentials"];
+    AuthProcess -> Admin [label="JWT Token"];
+    
+    Admin -> AdminProcess [label="User Updates\n(role, status)\nModel Toggle"];
+    AdminProcess -> Admin [label="System Metrics\nUser List\nAudit Logs\nModel Info"];
+    
+    // AI Service Flows
+    edge [color="#E91E63"];
+    
+    PredictionProcess -> AIService [label="Preprocessed Image\n(224x224 Tensor)"];
+    AIService -> PredictionProcess [label="Disease Class\nConfidence Score"];
+    AIService -> ModelFile [label="Load Weights", style=dashed];
+    AIService -> TreatmentDB [label="Lookup\nTreatments"];
+    TreatmentDB -> AIService [label="Treatment\nRecommendations"];
+    
+    // Process to Data Store Flows
+    edge [color="#9C27B0", penwidth=1.2];
+    
+    AuthProcess -> UserDB [label="Create/Read\nUser"];
+    UserDB -> AuthProcess [label="User Data"];
+    
+    PredictionProcess -> PredictionDB [label="Store\nPrediction"];
+    PredictionProcess -> FileStorage [label="Save Image\nFile"];
+    FileStorage -> PredictionProcess [label="Image URL"];
+    
+    ReviewProcess -> PredictionDB [label="Update\nVerification"];
+    PredictionDB -> ReviewProcess [label="Prediction\nData"];
+    
+    AdminProcess -> UserDB [label="CRUD\nOperations"];
+    UserDB -> AdminProcess [label="User List"];
+    
+    AdminProcess -> AuditDB [label="Read\nLogs"];
+    AuditDB -> AdminProcess [label="Audit\nEvents"];
+    
+    // Audit logging (all processes)
+    edge [color="#607D8B", style=dashed];
+    
+    AuthProcess -> AuditDB [label="Log: login,\nregister"];
+    ReviewProcess -> AuditDB [label="Log: verify,\nflag"];
+    AdminProcess -> AuditDB [label="Log: role_change,\nuser_delete,\nmodel_toggle"];
+    
+    // Notification flows
+    edge [color="#673AB7"];
+    
+    ReviewProcess -> NotificationProcess [label="Trigger\nNotification"];
+    NotificationProcess -> NotificationDB [label="Store\nNotification"];
+    NotificationDB -> NotificationProcess [label="Notification\nList"];
+    
+    // Legend
+    subgraph cluster_legend {
+        label="Legend";
+        style=filled;
+        fillcolor="#FAFAFA";
+        
+        LegendEntity [shape=box, style=filled, fillcolor="#E3F2FD", label="External Entity"];
+        LegendProcess [shape=ellipse, style=filled, fillcolor="#C8E6C9", label="Process"];
+        LegendStore [shape=box, style="filled,bold", fillcolor="#E1BEE7", label="D# | Data Store"];
+        
+        LegendEntity -> LegendProcess [style=invis];
+        LegendProcess -> LegendStore [style=invis];
+    }
+}

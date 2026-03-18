@@ -1,0 +1,163 @@
+digraph ERDiagram {
+    rankdir=LR;
+    bgcolor="white";
+    fontname="Arial";
+    node [fontname="Arial", shape=record, style=filled, fillcolor="white"];
+    edge [fontname="Arial"];
+    
+    // Title
+    labelloc="t";
+    label="PlantWise AI - Entity Relationship Diagram";
+    fontsize=20;
+    
+    // Users Table
+    users [
+        label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD BGCOLOR="#4CAF50" COLSPAN="2"><FONT COLOR="white"><B>users</B></FONT></TD></TR>
+            <TR><TD ALIGN="LEFT">🔑 id</TD><TD ALIGN="LEFT">TEXT (PK)</TD></TR>
+            <TR><TD ALIGN="LEFT">📧 email</TD><TD ALIGN="LEFT">TEXT UNIQUE NOT NULL</TD></TR>
+            <TR><TD ALIGN="LEFT">👤 name</TD><TD ALIGN="LEFT">TEXT NOT NULL</TD></TR>
+            <TR><TD ALIGN="LEFT">🔒 password</TD><TD ALIGN="LEFT">TEXT NOT NULL (BCrypt)</TD></TR>
+            <TR><TD ALIGN="LEFT">🎭 role</TD><TD ALIGN="LEFT">TEXT DEFAULT 'farmer'</TD></TR>
+            <TR><TD ALIGN="LEFT">✅ isActive</TD><TD ALIGN="LEFT">INTEGER DEFAULT 1</TD></TR>
+            <TR><TD ALIGN="LEFT">📅 createdAt</TD><TD ALIGN="LEFT">TEXT NOT NULL (ISO)</TD></TR>
+            <TR><TD ALIGN="LEFT">📅 updatedAt</TD><TD ALIGN="LEFT">TEXT NOT NULL (ISO)</TD></TR>
+        </TABLE>>
+        shape=none
+    ];
+    
+    // Predictions Table
+    predictions [
+        label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD BGCOLOR="#2196F3" COLSPAN="2"><FONT COLOR="white"><B>predictions</B></FONT></TD></TR>
+            <TR><TD ALIGN="LEFT">🔑 id</TD><TD ALIGN="LEFT">TEXT (PK)</TD></TR>
+            <TR><TD ALIGN="LEFT">🔗 userId</TD><TD ALIGN="LEFT">TEXT (FK → users.id)</TD></TR>
+            <TR><TD ALIGN="LEFT">🖼️ imageUrl</TD><TD ALIGN="LEFT">TEXT NOT NULL</TD></TR>
+            <TR><TD ALIGN="LEFT">🌱 cropName</TD><TD ALIGN="LEFT">TEXT NOT NULL</TD></TR>
+            <TR><TD ALIGN="LEFT">🦠 diseaseName</TD><TD ALIGN="LEFT">TEXT NOT NULL</TD></TR>
+            <TR><TD ALIGN="LEFT">📊 confidence</TD><TD ALIGN="LEFT">REAL NOT NULL</TD></TR>
+            <TR><TD ALIGN="LEFT">🏷️ status</TD><TD ALIGN="LEFT">TEXT NOT NULL</TD></TR>
+            <TR><TD ALIGN="LEFT">💊 treatments</TD><TD ALIGN="LEFT">TEXT NOT NULL (JSON)</TD></TR>
+            <TR><TD ALIGN="LEFT">📅 createdAt</TD><TD ALIGN="LEFT">TEXT NOT NULL (ISO)</TD></TR>
+            <TR><TD ALIGN="LEFT">✔️ isVerified</TD><TD ALIGN="LEFT">INTEGER DEFAULT 0</TD></TR>
+            <TR><TD ALIGN="LEFT">🔗 verifiedBy</TD><TD ALIGN="LEFT">TEXT (FK → users.id)</TD></TR>
+            <TR><TD ALIGN="LEFT">💬 officerComments</TD><TD ALIGN="LEFT">TEXT</TD></TR>
+            <TR><TD ALIGN="LEFT">🚩 isFlagged</TD><TD ALIGN="LEFT">INTEGER DEFAULT 0</TD></TR>
+            <TR><TD ALIGN="LEFT">📝 flagReason</TD><TD ALIGN="LEFT">TEXT</TD></TR>
+        </TABLE>>
+        shape=none
+    ];
+    
+    // Audit Logs Table
+    audit_logs [
+        label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD BGCOLOR="#FF9800" COLSPAN="2"><FONT COLOR="white"><B>audit_logs</B></FONT></TD></TR>
+            <TR><TD ALIGN="LEFT">🔑 id</TD><TD ALIGN="LEFT">TEXT (PK)</TD></TR>
+            <TR><TD ALIGN="LEFT">🔗 userId</TD><TD ALIGN="LEFT">TEXT NOT NULL</TD></TR>
+            <TR><TD ALIGN="LEFT">👤 userName</TD><TD ALIGN="LEFT">TEXT NOT NULL</TD></TR>
+            <TR><TD ALIGN="LEFT">⚡ action</TD><TD ALIGN="LEFT">TEXT NOT NULL</TD></TR>
+            <TR><TD ALIGN="LEFT">📝 details</TD><TD ALIGN="LEFT">TEXT</TD></TR>
+            <TR><TD ALIGN="LEFT">⏰ timestamp</TD><TD ALIGN="LEFT">TEXT NOT NULL (ISO)</TD></TR>
+            <TR><TD ALIGN="LEFT">🌐 ipAddress</TD><TD ALIGN="LEFT">TEXT</TD></TR>
+        </TABLE>>
+        shape=none
+    ];
+    
+    // Notifications Table
+    notifications [
+        label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD BGCOLOR="#9C27B0" COLSPAN="2"><FONT COLOR="white"><B>notifications</B></FONT></TD></TR>
+            <TR><TD ALIGN="LEFT">🔑 id</TD><TD ALIGN="LEFT">TEXT (PK)</TD></TR>
+            <TR><TD ALIGN="LEFT">🔗 userId</TD><TD ALIGN="LEFT">TEXT (FK → users.id)</TD></TR>
+            <TR><TD ALIGN="LEFT">📋 type</TD><TD ALIGN="LEFT">TEXT NOT NULL</TD></TR>
+            <TR><TD ALIGN="LEFT">📌 title</TD><TD ALIGN="LEFT">TEXT NOT NULL</TD></TR>
+            <TR><TD ALIGN="LEFT">💬 message</TD><TD ALIGN="LEFT">TEXT NOT NULL</TD></TR>
+            <TR><TD ALIGN="LEFT">👁️ isRead</TD><TD ALIGN="LEFT">INTEGER DEFAULT 0</TD></TR>
+            <TR><TD ALIGN="LEFT">📅 createdAt</TD><TD ALIGN="LEFT">TEXT NOT NULL (ISO)</TD></TR>
+            <TR><TD ALIGN="LEFT">🔗 link</TD><TD ALIGN="LEFT">TEXT</TD></TR>
+        </TABLE>>
+        shape=none
+    ];
+    
+    // Role Enum (conceptual)
+    role_enum [
+        label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD BGCOLOR="#607D8B" COLSPAN="2"><FONT COLOR="white"><B>UserRole (Enum)</B></FONT></TD></TR>
+            <TR><TD ALIGN="LEFT">👨‍🌾</TD><TD ALIGN="LEFT">farmer</TD></TR>
+            <TR><TD ALIGN="LEFT">👨‍💼</TD><TD ALIGN="LEFT">officer</TD></TR>
+            <TR><TD ALIGN="LEFT">🛡️</TD><TD ALIGN="LEFT">admin</TD></TR>
+        </TABLE>>
+        shape=none
+    ];
+    
+    // Status Enum (conceptual)
+    status_enum [
+        label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD BGCOLOR="#607D8B" COLSPAN="2"><FONT COLOR="white"><B>DiseaseStatus (Enum)</B></FONT></TD></TR>
+            <TR><TD ALIGN="LEFT">✅</TD><TD ALIGN="LEFT">healthy</TD></TR>
+            <TR><TD ALIGN="LEFT">🦠</TD><TD ALIGN="LEFT">diseased</TD></TR>
+        </TABLE>>
+        shape=none
+    ];
+    
+    // Notification Type Enum
+    notif_enum [
+        label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD BGCOLOR="#607D8B" COLSPAN="2"><FONT COLOR="white"><B>NotificationType (Enum)</B></FONT></TD></TR>
+            <TR><TD ALIGN="LEFT">🔮</TD><TD ALIGN="LEFT">prediction_ready</TD></TR>
+            <TR><TD ALIGN="LEFT">📋</TD><TD ALIGN="LEFT">review_request</TD></TR>
+            <TR><TD ALIGN="LEFT">⚠️</TD><TD ALIGN="LEFT">system_alert</TD></TR>
+            <TR><TD ALIGN="LEFT">🎭</TD><TD ALIGN="LEFT">role_change</TD></TR>
+        </TABLE>>
+        shape=none
+    ];
+    
+    // Relationships
+    edge [color="#333333", penwidth=2];
+    
+    // users 1 --- N predictions (owner)
+    users -> predictions [
+        label="1:N\n(owns)"
+        headlabel="N"
+        taillabel="1"
+        arrowhead=crow
+        arrowtail=none
+    ];
+    
+    // users 1 --- N predictions (verifier - optional)
+    users -> predictions [
+        label="1:N\n(verifies)"
+        headlabel="N"
+        taillabel="0..1"
+        arrowhead=crow
+        arrowtail=odot
+        style=dashed
+        color="#666666"
+    ];
+    
+    // users 1 --- N notifications
+    users -> notifications [
+        label="1:N\n(receives)"
+        headlabel="N"
+        taillabel="1"
+        arrowhead=crow
+        arrowtail=none
+    ];
+    
+    // users 1 --- N audit_logs (logged action by)
+    users -> audit_logs [
+        label="1:N\n(performs)"
+        headlabel="N"
+        taillabel="1"
+        arrowhead=crow
+        arrowtail=none
+        style=dashed
+        color="#FF9800"
+    ];
+    
+    // Enum references (dotted)
+    edge [style=dotted, color="#999999", penwidth=1, arrowhead=none];
+    users -> role_enum [label="uses"];
+    predictions -> status_enum [label="uses"];
+    notifications -> notif_enum [label="uses"];
+}

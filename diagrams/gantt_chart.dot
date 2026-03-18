@@ -1,0 +1,263 @@
+digraph GanttChart {
+    rankdir=LR;
+    bgcolor="white";
+    fontname="Arial";
+    node [fontname="Arial", shape=box, style="filled,rounded"];
+    edge [fontname="Arial"];
+    
+    // Title
+    labelloc="t";
+    label="PlantWise AI - Project Gantt Chart (Execution Phases)";
+    fontsize=20;
+    
+    // Timeline header
+    subgraph cluster_timeline {
+        label="Project Timeline";
+        style=filled;
+        fillcolor="#ECEFF1";
+        
+        node [shape=box, style=filled, fillcolor="#CFD8DC", height=0.4];
+        
+        Week1 [label="Week 1-2"];
+        Week2 [label="Week 3-4"];
+        Week3 [label="Week 5-6"];
+        Week4 [label="Week 7-8"];
+        Week5 [label="Week 9-10"];
+        Week6 [label="Week 11-12"];
+        
+        Week1 -> Week2 -> Week3 -> Week4 -> Week5 -> Week6 [style=invis];
+    }
+    
+    // Phase 1: Requirements & Design
+    subgraph cluster_phase1 {
+        label="Phase 1: Requirements & Design";
+        style=filled;
+        fillcolor="#E3F2FD";
+        color="#64B5F6";
+        
+        T1_1 [label="Requirements\nGathering", fillcolor="#BBDEFB"];
+        T1_2 [label="System\nAnalysis", fillcolor="#BBDEFB"];
+        T1_3 [label="Architecture\nDesign", fillcolor="#BBDEFB"];
+        T1_4 [label="Database\nSchema Design", fillcolor="#BBDEFB"];
+        T1_5 [label="UI/UX\nWireframes", fillcolor="#BBDEFB"];
+        T1_6 [label="API Contract\nDefinition", fillcolor="#BBDEFB"];
+        
+        T1_1 -> T1_2 -> T1_3;
+        T1_3 -> T1_4;
+        T1_3 -> T1_5;
+        T1_3 -> T1_6;
+    }
+    
+    // Phase 2: Database Design & Setup
+    subgraph cluster_phase2 {
+        label="Phase 2: Database Design";
+        style=filled;
+        fillcolor="#E8F5E9";
+        color="#81C784";
+        
+        T2_1 [label="SQLite\nSetup", fillcolor="#C8E6C9"];
+        T2_2 [label="Users Table\nImplementation", fillcolor="#C8E6C9"];
+        T2_3 [label="Predictions Table\nImplementation", fillcolor="#C8E6C9"];
+        T2_4 [label="Audit Logs\nTable", fillcolor="#C8E6C9"];
+        T2_5 [label="Notifications\nTable", fillcolor="#C8E6C9"];
+        T2_6 [label="Database\nClass (aiosqlite)", fillcolor="#C8E6C9"];
+        
+        T2_1 -> T2_2 -> T2_3;
+        T2_3 -> T2_4 -> T2_5;
+        T2_2 -> T2_6;
+    }
+    
+    // Phase 3: AI Model Integration
+    subgraph cluster_phase3 {
+        label="Phase 3: AI Model Integration";
+        style=filled;
+        fillcolor="#FFF3E0";
+        color="#FFB74D";
+        
+        T3_1 [label="Dataset\nPreparation\n(PlantVillage)", fillcolor="#FFE0B2"];
+        T3_2 [label="Model Training\n(TensorFlow/Keras)", fillcolor="#FFE0B2"];
+        T3_3 [label="Model Export\n(.h5 file)", fillcolor="#FFE0B2"];
+        T3_4 [label="Image\nPreprocessing", fillcolor="#FFE0B2"];
+        T3_5 [label="Inference\nPipeline", fillcolor="#FFE0B2"];
+        T3_6 [label="Treatment\nDatabase", fillcolor="#FFE0B2"];
+        T3_7 [label="PlantDiseaseModel\nClass", fillcolor="#FFE0B2"];
+        
+        T3_1 -> T3_2 -> T3_3;
+        T3_3 -> T3_4 -> T3_5;
+        T3_5 -> T3_6 -> T3_7;
+    }
+    
+    // Phase 4: Backend Development
+    subgraph cluster_phase4 {
+        label="Phase 4: Backend Development";
+        style=filled;
+        fillcolor="#F3E5F5";
+        color="#BA68C8";
+        
+        T4_1 [label="FastAPI\nSetup", fillcolor="#E1BEE7"];
+        T4_2 [label="Auth Endpoints\n(Register/Login)", fillcolor="#E1BEE7"];
+        T4_3 [label="JWT\nAuthentication", fillcolor="#E1BEE7"];
+        T4_4 [label="Role-Based\nAccess Control", fillcolor="#E1BEE7"];
+        T4_5 [label="Prediction\nEndpoints", fillcolor="#E1BEE7"];
+        T4_6 [label="Officer\nEndpoints", fillcolor="#E1BEE7"];
+        T4_7 [label="Admin\nEndpoints", fillcolor="#E1BEE7"];
+        T4_8 [label="Notification\nEndpoints", fillcolor="#E1BEE7"];
+        T4_9 [label="Static Files\nServing", fillcolor="#E1BEE7"];
+        
+        T4_1 -> T4_2 -> T4_3 -> T4_4;
+        T4_4 -> T4_5;
+        T4_4 -> T4_6;
+        T4_4 -> T4_7;
+        T4_4 -> T4_8;
+        T4_5 -> T4_9;
+    }
+    
+    // Phase 5: Frontend Development
+    subgraph cluster_phase5 {
+        label="Phase 5: Frontend Development";
+        style=filled;
+        fillcolor="#E0F2F1";
+        color="#4DB6AC";
+        
+        T5_1 [label="Vite + React\nSetup", fillcolor="#B2DFDB"];
+        T5_2 [label="TypeScript\nConfiguration", fillcolor="#B2DFDB"];
+        T5_3 [label="Tailwind CSS\n+ shadcn/ui", fillcolor="#B2DFDB"];
+        T5_4 [label="Auth Context\nImplementation", fillcolor="#B2DFDB"];
+        T5_5 [label="API Service\nLayer", fillcolor="#B2DFDB"];
+        T5_6 [label="Landing Page\nComponents", fillcolor="#B2DFDB"];
+        T5_7 [label="Auth Pages\n(Login/Register)", fillcolor="#B2DFDB"];
+        T5_8 [label="Farmer Dashboard\n& Pages", fillcolor="#B2DFDB"];
+        T5_9 [label="Officer Dashboard\n& Pages", fillcolor="#B2DFDB"];
+        T5_10 [label="Admin Dashboard\n& Pages", fillcolor="#B2DFDB"];
+        T5_11 [label="Protected Routes\n& Navigation", fillcolor="#B2DFDB"];
+        
+        T5_1 -> T5_2 -> T5_3;
+        T5_3 -> T5_4 -> T5_5;
+        T5_5 -> T5_6;
+        T5_5 -> T5_7;
+        T5_7 -> T5_8;
+        T5_7 -> T5_9;
+        T5_7 -> T5_10;
+        T5_8 -> T5_11;
+        T5_9 -> T5_11;
+        T5_10 -> T5_11;
+    }
+    
+    // Phase 6: Authentication & Security
+    subgraph cluster_phase6 {
+        label="Phase 6: Authentication & Security";
+        style=filled;
+        fillcolor="#FCE4EC";
+        color="#F06292";
+        
+        T6_1 [label="BCrypt\nPassword Hashing", fillcolor="#F8BBD9"];
+        T6_2 [label="JWT Token\nGeneration", fillcolor="#F8BBD9"];
+        T6_3 [label="Token\nValidation", fillcolor="#F8BBD9"];
+        T6_4 [label="Role Guards\n(require_role)", fillcolor="#F8BBD9"];
+        T6_5 [label="CORS\nConfiguration", fillcolor="#F8BBD9"];
+        T6_6 [label="Protected Route\nComponent", fillcolor="#F8BBD9"];
+        
+        T6_1 -> T6_2 -> T6_3;
+        T6_3 -> T6_4 -> T6_5;
+        T6_4 -> T6_6;
+    }
+    
+    // Phase 7: Testing
+    subgraph cluster_phase7 {
+        label="Phase 7: Testing";
+        style=filled;
+        fillcolor="#FFFDE7";
+        color="#FFD54F";
+        
+        T7_1 [label="Unit Tests\nSetup (Vitest)", fillcolor="#FFF9C4"];
+        T7_2 [label="API Endpoint\nTesting", fillcolor="#FFF9C4"];
+        T7_3 [label="AI Model\nValidation", fillcolor="#FFF9C4"];
+        T7_4 [label="Frontend\nComponent Tests", fillcolor="#FFF9C4"];
+        T7_5 [label="Integration\nTesting", fillcolor="#FFF9C4"];
+        T7_6 [label="User Acceptance\nTesting", fillcolor="#FFF9C4"];
+        
+        T7_1 -> T7_2 -> T7_3;
+        T7_3 -> T7_4 -> T7_5 -> T7_6;
+    }
+    
+    // Phase 8: Deployment
+    subgraph cluster_phase8 {
+        label="Phase 8: Deployment";
+        style=filled;
+        fillcolor="#EFEBE9";
+        color="#A1887F";
+        
+        T8_1 [label="Production\nBuild", fillcolor="#D7CCC8"];
+        T8_2 [label="Environment\nConfiguration", fillcolor="#D7CCC8"];
+        T8_3 [label="Server\nSetup", fillcolor="#D7CCC8"];
+        T8_4 [label="SSL/HTTPS\nConfiguration", fillcolor="#D7CCC8"];
+        T8_5 [label="Domain\nSetup", fillcolor="#D7CCC8"];
+        T8_6 [label="Monitoring\nSetup", fillcolor="#D7CCC8"];
+        
+        T8_1 -> T8_2 -> T8_3;
+        T8_3 -> T8_4 -> T8_5 -> T8_6;
+    }
+    
+    // Phase 9: Documentation
+    subgraph cluster_phase9 {
+        label="Phase 9: Documentation";
+        style=filled;
+        fillcolor="#E8EAF6";
+        color="#7986CB";
+        
+        T9_1 [label="API\nDocumentation", fillcolor="#C5CAE9"];
+        T9_2 [label="User Manual", fillcolor="#C5CAE9"];
+        T9_3 [label="Admin Guide", fillcolor="#C5CAE9"];
+        T9_4 [label="Deployment\nGuide", fillcolor="#C5CAE9"];
+        T9_5 [label="README\nUpdates", fillcolor="#C5CAE9"];
+        
+        T9_1 -> T9_2 -> T9_3;
+        T9_3 -> T9_4 -> T9_5;
+    }
+    
+    // Phase Dependencies (cross-phase)
+    edge [style=dashed, color="#666666"];
+    
+    // Requirements -> All phases
+    T1_4 -> T2_1 [label="Schema"];
+    T1_6 -> T4_1 [label="API Spec"];
+    T1_5 -> T5_1 [label="Wireframes"];
+    
+    // Database -> Backend
+    T2_6 -> T4_1 [label="DB Ready"];
+    
+    // AI Model -> Backend
+    T3_7 -> T4_5 [label="Model Ready"];
+    
+    // Backend -> Frontend
+    T4_2 -> T5_5 [label="Auth API"];
+    T4_5 -> T5_8 [label="Prediction API"];
+    T4_6 -> T5_9 [label="Officer API"];
+    T4_7 -> T5_10 [label="Admin API"];
+    
+    // Security -> Both ends
+    T6_3 -> T4_4 [label="JWT Middleware"];
+    T6_6 -> T5_11 [label="Route Guards"];
+    
+    // Development -> Testing
+    T4_9 -> T7_2 [label="APIs Complete"];
+    T5_11 -> T7_4 [label="UI Complete"];
+    
+    // Testing -> Deployment
+    T7_6 -> T8_1 [label="Tests Pass"];
+    
+    // Deployment -> Documentation
+    T8_6 -> T9_4 [label="Deployed"];
+    
+    // Timeline alignment (invisible edges)
+    edge [style=invis];
+    Week1 -> T1_1;
+    Week2 -> T2_1;
+    Week2 -> T3_1;
+    Week3 -> T4_1;
+    Week3 -> T6_1;
+    Week4 -> T5_1;
+    Week5 -> T7_1;
+    Week6 -> T8_1;
+    Week6 -> T9_1;
+}

@@ -1,0 +1,148 @@
+digraph UseCaseDiagram {
+    rankdir=LR;
+    bgcolor="white";
+    fontname="Arial";
+    node [fontname="Arial"];
+    edge [fontname="Arial"];
+    
+    // Title
+    labelloc="t";
+    label="PlantWise AI - Use Case Diagram";
+    fontsize=20;
+    
+    // Actors - Styled as stick figures (rectangles with labels)
+    subgraph cluster_actors {
+        label="Actors";
+        style=invis;
+        
+        Farmer [shape=box, style="rounded,filled", fillcolor="#E8F5E9", label="👨‍🌾 Farmer"];
+        Officer [shape=box, style="rounded,filled", fillcolor="#C8E6C9", label="👨‍💼 Agricultural Officer"];
+        Admin [shape=box, style="rounded,filled", fillcolor="#A5D6A7", label="🛡️ System Admin"];
+        AIEngine [shape=box, style="rounded,filled", fillcolor="#81C784", label="🤖 AI Engine\n(TensorFlow Model)"];
+        System [shape=box, style="rounded,filled", fillcolor="#66BB6A", label="⚙️ PlantWise System"];
+    }
+    
+    // Use Cases grouped by subsystem
+    subgraph cluster_auth {
+        label="Authentication Subsystem";
+        style=filled;
+        fillcolor="#F1F8E9";
+        color="#C5E1A5";
+        
+        UC_Register [shape=ellipse, label="Register Account", style=filled, fillcolor="white"];
+        UC_Login [shape=ellipse, label="Login", style=filled, fillcolor="white"];
+        UC_Logout [shape=ellipse, label="Logout", style=filled, fillcolor="white"];
+        UC_ViewProfile [shape=ellipse, label="View Profile", style=filled, fillcolor="white"];
+        UC_ChangePassword [shape=ellipse, label="Change Password", style=filled, fillcolor="white"];
+    }
+    
+    subgraph cluster_farmer {
+        label="Farmer Features";
+        style=filled;
+        fillcolor="#E8F5E9";
+        color="#A5D6A7";
+        
+        UC_UploadImage [shape=ellipse, label="Upload Plant Image", style=filled, fillcolor="white"];
+        UC_GetPrediction [shape=ellipse, label="Get Disease Prediction", style=filled, fillcolor="white"];
+        UC_ViewHistory [shape=ellipse, label="View Prediction History", style=filled, fillcolor="white"];
+        UC_ViewTreatments [shape=ellipse, label="View Treatment\nRecommendations", style=filled, fillcolor="white"];
+        UC_DownloadPDF [shape=ellipse, label="Download Report PDF", style=filled, fillcolor="white"];
+        UC_ViewNotifications [shape=ellipse, label="View Notifications", style=filled, fillcolor="white"];
+    }
+    
+    subgraph cluster_officer {
+        label="Officer Features";
+        style=filled;
+        fillcolor="#DCEDC8";
+        color="#AED581";
+        
+        UC_ReviewPredictions [shape=ellipse, label="Review Pending\nPredictions", style=filled, fillcolor="white"];
+        UC_VerifyPrediction [shape=ellipse, label="Verify/Correct\nPrediction", style=filled, fillcolor="white"];
+        UC_FlagPrediction [shape=ellipse, label="Flag Prediction", style=filled, fillcolor="white"];
+        UC_AddTreatments [shape=ellipse, label="Add Treatment\nSuggestions", style=filled, fillcolor="white"];
+        UC_ViewStatistics [shape=ellipse, label="View Review\nStatistics", style=filled, fillcolor="white"];
+    }
+    
+    subgraph cluster_admin {
+        label="Admin Features";
+        style=filled;
+        fillcolor="#C8E6C9";
+        color="#81C784";
+        
+        UC_ManageUsers [shape=ellipse, label="Manage Users", style=filled, fillcolor="white"];
+        UC_AssignRoles [shape=ellipse, label="Assign User Roles", style=filled, fillcolor="white"];
+        UC_ToggleUserStatus [shape=ellipse, label="Activate/Deactivate\nUsers", style=filled, fillcolor="white"];
+        UC_DeleteUser [shape=ellipse, label="Delete User", style=filled, fillcolor="white"];
+        UC_ViewMetrics [shape=ellipse, label="View System Metrics", style=filled, fillcolor="white"];
+        UC_ViewAuditLogs [shape=ellipse, label="View Audit Logs", style=filled, fillcolor="white"];
+        UC_ManageModel [shape=ellipse, label="Manage AI Model", style=filled, fillcolor="white"];
+        UC_ToggleModel [shape=ellipse, label="Toggle Model Status", style=filled, fillcolor="white"];
+    }
+    
+    subgraph cluster_system {
+        label="System Operations";
+        style=filled;
+        fillcolor="#B2DFDB";
+        color="#80CBC4";
+        
+        UC_RunInference [shape=ellipse, label="Run Disease\nInference", style=filled, fillcolor="white"];
+        UC_StoreData [shape=ellipse, label="Store Prediction\nData", style=filled, fillcolor="white"];
+        UC_LogAudit [shape=ellipse, label="Log Audit Events", style=filled, fillcolor="white"];
+        UC_SendNotification [shape=ellipse, label="Send Notifications", style=filled, fillcolor="white"];
+    }
+    
+    // Farmer associations
+    Farmer -> UC_Register;
+    Farmer -> UC_Login;
+    Farmer -> UC_Logout;
+    Farmer -> UC_ViewProfile;
+    Farmer -> UC_ChangePassword;
+    Farmer -> UC_UploadImage;
+    Farmer -> UC_GetPrediction;
+    Farmer -> UC_ViewHistory;
+    Farmer -> UC_ViewTreatments;
+    Farmer -> UC_DownloadPDF;
+    Farmer -> UC_ViewNotifications;
+    
+    // Officer associations (includes farmer features + officer features)
+    Officer -> UC_Login;
+    Officer -> UC_ViewProfile;
+    Officer -> UC_UploadImage;
+    Officer -> UC_ReviewPredictions;
+    Officer -> UC_VerifyPrediction;
+    Officer -> UC_FlagPrediction;
+    Officer -> UC_AddTreatments;
+    Officer -> UC_ViewStatistics;
+    
+    // Admin associations (all features)
+    Admin -> UC_Login;
+    Admin -> UC_ManageUsers;
+    Admin -> UC_AssignRoles;
+    Admin -> UC_ToggleUserStatus;
+    Admin -> UC_DeleteUser;
+    Admin -> UC_ViewMetrics;
+    Admin -> UC_ViewAuditLogs;
+    Admin -> UC_ManageModel;
+    Admin -> UC_ToggleModel;
+    Admin -> UC_ReviewPredictions;
+    
+    // AI Engine associations
+    AIEngine -> UC_RunInference;
+    
+    // System associations
+    System -> UC_StoreData;
+    System -> UC_LogAudit;
+    System -> UC_SendNotification;
+    
+    // Include relationships (dashed lines)
+    edge [style=dashed, label="<<include>>", fontsize=10];
+    UC_UploadImage -> UC_RunInference;
+    UC_RunInference -> UC_GetPrediction;
+    UC_GetPrediction -> UC_StoreData;
+    UC_VerifyPrediction -> UC_LogAudit;
+    UC_AssignRoles -> UC_LogAudit;
+    UC_ToggleUserStatus -> UC_LogAudit;
+    UC_DeleteUser -> UC_LogAudit;
+    UC_ToggleModel -> UC_LogAudit;
+    UC_VerifyPrediction -> UC_SendNotification;
+}
