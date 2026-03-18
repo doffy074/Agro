@@ -106,9 +106,13 @@ const ImageUpload: React.FC = () => {
       if (response.data?.id) {
         navigate(`/predictions/${response.data.id}`);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       clearInterval(progressInterval);
-      setError(err.message || 'Failed to analyze image. Please try again.');
+      let message = 'Failed to analyze image. Please try again.';
+      if (err instanceof Error) {
+        message = err.message;
+      }
+      setError(message);
       setUploadProgress(0);
     } finally {
       setIsUploading(false);
